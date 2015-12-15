@@ -46,11 +46,10 @@ A product can be understood as a union of values or types, e.g. :
 
 and coproduct is something that can only be either of certain types or values:
 
-
-
-    sealed trait Foo
-
-    case object A extends Foo
+```
+trait Foo
+case object A extends Foo
+```
 
 
 
