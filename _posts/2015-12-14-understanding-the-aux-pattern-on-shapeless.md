@@ -13,6 +13,8 @@ I new they were some kind of evidence for the compiler, but I realized that with
 So this is my exploration. I wanted a way to extract the values of an specific type in a hierarchy of ADTs.
 
 i.e.:
+
+```
 object ints extends Field[Int]
 object strings extends Field[String]
 
@@ -27,6 +29,7 @@ val fs: List[F] = List( A( 1 ), B( "b" ), C( 3, "c" ), H(4) )
 
 assert( fs.map( f => ints.filter( f ) ).flatten == List( 1, 3, 4 ) )
 assert( fs.map( f => strings.filter( f ) ).flatten == List( "b", "c" ) )
+```
 
 Given any `F`  we could find all the integers or strings that it might contain, within itself or any of its children.
 
