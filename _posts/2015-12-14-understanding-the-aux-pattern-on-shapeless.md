@@ -11,6 +11,7 @@ I happen to have in my company.
 
 There is an API that needs to return a data structure back to the caller,
 this data structure can be modeled as a case class:
+
 ~~~
 case class Time(millis: Long)
 case class Location(place: String)
