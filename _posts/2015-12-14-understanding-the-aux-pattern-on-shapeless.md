@@ -49,6 +49,7 @@ and so on
 ~~~
 
 In order to create the `Response` object I'd like to do something like this:
+
 ~~~
 val data: List[Data] = List(
   TimesFromHome(
@@ -90,6 +91,7 @@ Response(
   locations = data.flatMap( d => locations.filter( d ) ),
   values = values.flatMap( d => values.filter( d ) )
   )
+  
 ~~~
 
 Where `times.filter`, `locations.filter`, and `values.filter` are some kind of
