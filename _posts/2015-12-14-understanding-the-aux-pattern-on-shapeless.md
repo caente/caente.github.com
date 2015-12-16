@@ -9,7 +9,7 @@ tags: [scala, shapeless]
 This is an exploration of shapeless, by trying to solve an actual use case that
 I happen to have in my company.
 
-### The thask
+### The task
 
 There is an API that needs to return a data structure back to the caller,
 this data structure can be modeled as a case class:
