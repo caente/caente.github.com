@@ -9,6 +9,8 @@ tags: [scala, shapeless]
 This is an exploration of shapeless, by trying to solve an actual use case that
 I happen to have in my company.
 
+### The thask
+
 There is an API that needs to return a data structure back to the caller,
 this data structure can be modeled as a case class:
 
@@ -97,6 +99,8 @@ Response(
 Where `times.filter`, `locations.filter`, and `values.filter` are like
 "queries" that extract the desired types from a hierarchy of sealed traits/ case classes.
 
+### Products and coproducts
+
 In order to gain enough abstraction to make the type filters, I need to think
 in terms of products and coproducts.
 
@@ -113,12 +117,12 @@ and coproduct is something that can only be either of certain types or values:
 sealed trait Foo
 case object A extends Foo
 case object B extends Foo
+case object C extends Foo
 ~~~
 
-Shapeless abstracts both concepts by having the types `Coproduct` and `HList`. `HList`
-is the equivalent to product, not sure why the name, I guess `Product` was already taken.
+Shapeless abstracts both concepts by having the types `Coproduct` and `HList`. I'm not sure why was it called `HList` instead of `Product`, I guess the later was already take.
 
-Lets try some operations with an `HList`.
+These are some operations that can be done with an `HList`:
 
 ~~~
 @ import shapeless._
@@ -131,13 +135,12 @@ res2: Int :: HNil = ::(1, HNil)
 res3: List[Int] = List(1)
 ~~~
 
-You'll notice that `filter` on the `HList`. It is filtering at the type level.
-It doesn't care about the values them selves, it can only filter by type.
+The `filter` is filtering at the type level. It doesn't care about the values them selves, it can only filter by type.
 
 Most of the logic that you code in shapeless is for the compiler,
 not runtime.[[1]](https://gitter.im/milessabin/shapeless?at=5665d5ef835961e946e1be6d)
 
-We can do similar operations with a coproduct.
+Similar operations are possible for a coproduct.
 
 ~~~
 @ import shapeless._
@@ -176,6 +179,8 @@ defined class B
 @ Generic[F].to(A())
 res6: A :+: B :+: CNil = Inl(A())
 ~~~
+
+### The solution
 
 My solution for the "queries" starts with a trait that can filter by a type `A`
 
