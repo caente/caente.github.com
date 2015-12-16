@@ -6,62 +6,120 @@ tags: [scala, shapeless]
 ---
 {% include JB/setup %}
 
-I have been exploring shapeless for a few weeks now. Although I already I'm using coproducts and poly functions in our codebase, it was still very confusing any time I looked at some shapeless code and found those long lists of implicits and `<Combinators>.Aux`.
+This is an exploration of shapeless, by trying to solve an actual use case that
+I happen to have in my company.
 
-I new they were some kind of evidence for the compiler, but I realized that without using them, I wouldn't get they relevance.
-
-So this is my exploration. I wanted a way to extract the values of an specific type in a hierarchy of ADTs.
-
-i.e.:
-
+There is an API that needs to return a huge data structure back to the caller,
+this data structure can be modeled as a case class:
 ~~~
-object ints extends Field[Int]
-object strings extends Field[String]
+case class Time(millis: Long)
+case class Location(place: String)
+sealed trait Value
+case class ValueLocation(detail: String)
+case class ValueTime(after: Long)
 
-sealed trait F
-case class A( i: Int ) extends F
-case class B( s: String ) extends F
-case class C( i: Int, s: String ) extends F
-sealed trait E extends F
-case class H(i: Int) extends E
-
-val fs: List[F] = List( A( 1 ), B( "b" ), C( 3, "c" ), H(4) )
-
-assert( fs.map( f => ints.filter( f ) ).flatten == List( 1, 3, 4 ) )
-assert( fs.map( f => strings.filter( f ) ).flatten == List( "b", "c" ) )
+case class Response(
+  preferedTimes: List[Time],
+  preferedLocations: List[Location],
+  commonValues: List[Value]
+  )
 ~~~
 
-Given any `F`  we could find all the integers or strings that it might contain, within itself or any of its children.
+Ok it's not huge, it felt silly to actually make a huge case class for this post,
+but imagine it is.
 
-One thing I have realized, is that the concepts of product and coproduct are a cornerstone in the shapeless design.
+You can also see that all its fields have different types. This isn't by design,
+it happened to be the case. And that's what allows the solution I'm gonna try.
 
-And it makes sense, a lot of what we do in scala can be describe in terms of products and coproducts.
+So the "problem" is that different subsets of `preferedTimes`, `preferedLocations`,
+and `commonValues` are created by different parts of the system. So we have:
+
+~~~
+
+
+sealed trait Data
+case class TimesFromHome(times: List[Time],value: Value) extends Data
+case class TimesAndLocationsFromOutside(times: List[Time], location:Location, values: List[Value]) extends Data
+case class LocationsAheadOfTime(locations:List[Location], value: Value ) extends Data
+  .
+  .
+  .
+and so on
+
+~~~
+
+In order to create the `Response` object I'd like to do something like this:
+~~~
+val data: List[Data] = List(
+  TimesFromHome(
+    times = List(
+      Time(1L),
+      Time(2l)
+    ),
+    value = ValueTime(100L)
+  ),
+  TimesFromHome(
+    times = List(
+      Time(5L)
+      ),
+    value = ValueTime(50L)
+  ),
+  TimesAndLocationsFromOutside(
+    times = List(
+      Time(1L),
+      Time(2l)
+      ),
+    location = Location("some place"),
+    values = List(
+      ValueTime(100L),
+      ValueTime(50L),
+      ValueLocation("deep inside")
+    )
+  ),
+  LocationsAheadOfTime(
+    locations = List(
+      Location("some other place"),
+      Location("yet another")
+    ),
+    value = ValueLocation("deep inside")
+  )
+)
+
+Response(
+  times = data.flatMap( d => times.filter( d ) ),
+  locations = data.flatMap( d => locations.filter( d ) ),
+  values = values.flatMap( d => values.filter( d ) )
+  )
+~~~
+
+Where `times.filter`, `locations.filter`, and `values.filter` are some kind of
+"query" that extract the desired types from a hierarchy of sealed traits/ case classes.
+
+In order to gain enough abstraction to make our type filters, we need to think
+in terms of products and coproducts.
 
 A product can be understood as a union of values or types, e.g. :
 
 ~~~
-
-val t:(Int, String, Double) = null
-
+val t:(Int, String, Double) = (1, "a", 3D)
 case class Foo(i:Int, s: String, d: Double)
-
 ~~~
 
 and coproduct is something that can only be either of certain types or values:
 
 ~~~
-
 sealed trait Foo
-
 case object A extends Foo
-
+case object B extends Foo
 ~~~
 
-That's right any hierarchy of sealed traits it's a coproduct, since any instance can only be one of the descendants of the sealed trait parent.
+That's right any hierarchy of sealed traits it's a coproduct, since any instance
+can only be one of the descendants of the sealed trait parent.
 
-Shapeless abstract both concepts by creating Coproduct and HList. HList is the equivalent to product, not sure why the name, I guess Product was already taken.
+Shapeless abstracts both concepts by creating `Coproduct` and `HList`. `HList`
+is the equivalent to product, not sure why the name, I guess `Product` was already taken.
 
-Lets try some operations with HList.
+Lets try some operations with an `HList`.
 
 ~~~
 @ import shapeless._
@@ -74,11 +132,15 @@ res2: Int :: HNil = ::(1, HNil)
 res3: List[Int] = List(1)
 ~~~
 
-You'll notice that filter on the `HList`. So it is filtering at the type level. It doesn't care about the values them selves, it can only filter by types. Which makes sense, an `HList` is a compile time artifact. It cannot be created at runtime, in the same way you don't create tuples or case classes at runtime.
+You'll notice that `filter` on the `HList`. So it is filtering at the type level.
+It doesn't care about the values them selves, it can only filter by types.
+Which makes sense, an `HList` is a compile time artifact. It cannot be created
+at runtime, in the same way you don't create tuples or case classes at runtime.
 
-Most of the logic that you code in shapeless is for the compiler, not runtime.[1]
+Most of the logic that you code in shapeless is for the compiler,
+not runtime.[[1]](https://gitter.im/milessabin/shapeless?at=5665d5ef835961e946e1be6d)
 
-For a coproduct a similar operation would be:
+We can do similar operations with a coproduct.
 
 ~~~
 @ import shapeless._
@@ -91,9 +153,12 @@ res11: Option[shapeless.:+:[Int,shapeless.CNil]] = Some(1)
 res12: Option[Int] = Some(1)
 ~~~
 
-As you can see in both cases, you end up with a different type. It's very important to keep present that all it's been done here is at the type level.
+As you can see, in both cases you end up with a different type.
+It's very important to keep present that all it's been done here is at the type level.
 
-There are many possible operations for coproducts and hlists(products) on shapeless. But none for sealed traits nor tuples or case classes. For that we use Generic.
+There are many possible operations for coproducts and hlists(products)
+on shapeless. But none for sealed traits nor tuples or case classes.
+For that we use Generic.
 
 For a product:
 
@@ -119,9 +184,11 @@ defined class B
 res6: A :+: B :+: CNil = Inl(A())
 ~~~
 
-If we have a hierarchy of  cases class and sealed traits, we'll need to "transform" the type of the value into either a product or a coproduct.
+If we have a hierarchy of  cases class and sealed traits, we'll need to
+"transform" the type of the value into either a product or a coproduct.
 
-This is a simple solution, half way between type classes and inheritance.
+
+My solution for the "queries" starts with a trait that can filter by a type `[A]`
 
 ~~~
 
@@ -132,7 +199,8 @@ def filter:List[A] = ???
 }
 ~~~
 
-so to create a "query" for a type we only should need to do:
+So I can make an instance for an specific type this way:
+
 ~~~
 object ints extends Field[Int]
 object strings extends Field[String]
