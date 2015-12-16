@@ -181,9 +181,7 @@ My solution for the "queries" starts with a trait that can filter by a type `A`
 ~~~
 
 trait Field[A]{
-
-def filter:List[A] = ???
-
+    def filter:List[A] = ???
 }
 ~~~
 
