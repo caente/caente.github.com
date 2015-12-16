@@ -9,7 +9,7 @@ tags: [scala, shapeless]
 This is an exploration of shapeless, by trying to solve an actual use case that
 I happen to have in my company.
 
-There is an API that needs to return a huge data structure back to the caller,
+There is an API that needs to return a data structure back to the caller,
 this data structure can be modeled as a case class:
 ~~~
 case class Time(millis: Long)
@@ -23,16 +23,49 @@ case class Response(
   preferedLocations: List[Location],
   commonValues: List[Value]
   )
+
+val data: List[Data] = List(
+    TimesFromHome(
+      times = List(
+        Time(1L),
+        Time(2l)
+      ),
+      value = ValueTime(100L)
+    ),
+    TimesFromHome(
+      times = List(
+        Time(5L)
+        ),
+      value = ValueTime(50L)
+    ),
+    TimesAndLocationsFromOutside(
+      times = List(
+        Time(1L),
+        Time(2l)
+        ),
+      location = Location("some place"),
+      values = List(
+        ValueTime(100L),
+        ValueTime(50L),
+        ValueLocation("deep inside")
+      )
+    ),
+    LocationsAheadOfTime(
+      locations = List(
+        Location("some other place"),
+        Location("yet another")
+      ),
+      value = ValueLocation("deep inside")
+    )
+  )
+
 ~~~
 
-Ok it's not huge, it felt silly to actually make a huge case class for this post,
-but imagine it is.
-
-You can also see that all its fields have different types. This isn't by design,
+All its fields have different types. This isn't by design,
 it happened to be the case. And that's what allows the solution I'm gonna try.
 
 So the "problem" is that different subsets of `preferedTimes`, `preferedLocations`,
-and `commonValues` are created by different parts of the system. So we have:
+and `commonValues` are created by different parts of the system. So I could have:
 
 ~~~
 
@@ -51,53 +84,19 @@ and so on
 In order to create the `Response` object I'd like to do something like this:
 
 ~~~
-val data: List[Data] = List(
-  TimesFromHome(
-    times = List(
-      Time(1L),
-      Time(2l)
-    ),
-    value = ValueTime(100L)
-  ),
-  TimesFromHome(
-    times = List(
-      Time(5L)
-      ),
-    value = ValueTime(50L)
-  ),
-  TimesAndLocationsFromOutside(
-    times = List(
-      Time(1L),
-      Time(2l)
-      ),
-    location = Location("some place"),
-    values = List(
-      ValueTime(100L),
-      ValueTime(50L),
-      ValueLocation("deep inside")
-    )
-  ),
-  LocationsAheadOfTime(
-    locations = List(
-      Location("some other place"),
-      Location("yet another")
-    ),
-    value = ValueLocation("deep inside")
-  )
-)
 
 Response(
   times = data.flatMap( d => times.filter( d ) ),
   locations = data.flatMap( d => locations.filter( d ) ),
   values = values.flatMap( d => values.filter( d ) )
   )
-  
+
 ~~~
 
-Where `times.filter`, `locations.filter`, and `values.filter` are some kind of
-"query" that extract the desired types from a hierarchy of sealed traits/ case classes.
+Where `times.filter`, `locations.filter`, and `values.filter` are like
+"queries" that extract the desired types from a hierarchy of sealed traits/ case classes.
 
-In order to gain enough abstraction to make our type filters, we need to think
+In order to gain enough abstraction to make the type filters, I need to think
 in terms of products and coproducts.
 
 A product can be understood as a union of values or types, e.g. :
@@ -115,10 +114,7 @@ case object A extends Foo
 case object B extends Foo
 ~~~
 
-That's right any hierarchy of sealed traits it's a coproduct, since any instance
-can only be one of the descendants of the sealed trait parent.
-
-Shapeless abstracts both concepts by creating `Coproduct` and `HList`. `HList`
+Shapeless abstracts both concepts by having the types `Coproduct` and `HList`. `HList`
 is the equivalent to product, not sure why the name, I guess `Product` was already taken.
 
 Lets try some operations with an `HList`.
@@ -134,10 +130,8 @@ res2: Int :: HNil = ::(1, HNil)
 res3: List[Int] = List(1)
 ~~~
 
-You'll notice that `filter` on the `HList`. So it is filtering at the type level.
-It doesn't care about the values them selves, it can only filter by types.
-Which makes sense, an `HList` is a compile time artifact. It cannot be created
-at runtime, in the same way you don't create tuples or case classes at runtime.
+You'll notice that `filter` on the `HList`. It is filtering at the type level.
+It doesn't care about the values them selves, it can only filter by type.
 
 Most of the logic that you code in shapeless is for the compiler,
 not runtime.[[1]](https://gitter.im/milessabin/shapeless?at=5665d5ef835961e946e1be6d)
@@ -155,12 +149,8 @@ res11: Option[shapeless.:+:[Int,shapeless.CNil]] = Some(1)
 res12: Option[Int] = Some(1)
 ~~~
 
-As you can see, in both cases you end up with a different type.
-It's very important to keep present that all it's been done here is at the type level.
-
-There are many possible operations for coproducts and hlists(products)
-on shapeless. But none for sealed traits nor tuples or case classes.
-For that we use Generic.
+Shapeless provides a mechanism for "elevating" scala types to products and
+coproducts abstractions, by using `Generic`.
 
 For a product:
 
@@ -186,11 +176,7 @@ defined class B
 res6: A :+: B :+: CNil = Inl(A())
 ~~~
 
-If we have a hierarchy of  cases class and sealed traits, we'll need to
-"transform" the type of the value into either a product or a coproduct.
-
-
-My solution for the "queries" starts with a trait that can filter by a type `[A]`
+My solution for the "queries" starts with a trait that can filter by a type `A`
 
 ~~~
 
