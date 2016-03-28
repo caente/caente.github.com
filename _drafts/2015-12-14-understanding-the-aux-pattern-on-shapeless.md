@@ -163,8 +163,8 @@ For a product:
 import shapeless._
 @ case class F(i: Int, s:String, d: Double)
 defined class F
-@ Generic[F].to(F(1, "a", 3D))
-res2: Int :: String :: Double :: HNil = ::(1, ::("a", ::(3.0, HNil)))
+@ Generic[F].to(F(1, "a", 3D)).filter[Int].to[List]
+res7: List[Int] = List(1)
 ~~~
 
 For coproduct:
@@ -176,8 +176,8 @@ defined trait F
 defined class A
 @ case class B() extends F
 defined class B
-@ Generic[F].to(A())
-res6: A :+: B :+: CNil = Inl(A())
+@ Generic[F].to(A()).filter[A]
+res12: Option[A :+: CNil] = Some(A())
 ~~~
 
 ### The solution
