@@ -9,22 +9,25 @@ tags: [scala, type, typeclass]
 
 # Intended audience
 
-You are aware of the existence of typeclasses, but you are not sure where or when to use them. This post is to provide some guidelines for how and why use typeclasses. This post is also oriented to people writing domain specific software, not libraries. For libraries the use cases of typeclasses are more abstract, although the principles are similar.
+You are aware of the existence of typeclasses, but you are not sure where or when to use them, and you are mainly writing domain specific code. This post is to provide some guidelines for how and why use typeclasses. You are also familiar with scala, with traits, companion objects and similar machinery.
 
 # Motivation
 
 
-When programming, we usually need to write a method that has very strong domain semantics, for instance:
+When programming, we usually need to write a method that has very strong domain semantics, for example:
 
 ~~~
-case class Context(now:DateTime){
+case class Context(initialDate:DateTime){
   def isRecent(email:Email):Boolean = ???
 }
 ~~~
 
-This method is responding to a "question": Is this `Email` recent? From looking at the signature we learn nothing about it's inner workings. The name helps, but it's the _only_ source of information. What if we want to know other things about `Email`s, `Person`s, etc; that involve some logic? Having too many of these methods will really hinder the readability, and I dare to say, simplicity of the code.
+> The Context class is completely irrelevant four our case,
+> but it makes the scenario to look more realistic
 
-### Alternatively
+This method is responding to a "question": Is this `Email` recent? From looking at the signature we learn nothing about it's inner workings. The name helps, but it's the _only_ source of information. What if we want to know other things about `Email`s, `Person`s, etc; that involve some logic? Having too many of these methods will really hinder the readability, and I dare to say, the simplicity of the code.
+
+### Alternatives
 
 There are two approaches that I actually recommend over typeclasses for most situations.
 
@@ -39,8 +42,8 @@ isRecent(email.receivedDate)
 We don't care about the "meaning" of the  `DateTime` that we passed to `isRecent`.
 
 ~~~
-case class Context(now:DateTime){
-  def isRecent(timestamp:DateTime):Boolean = timestamp.isBefore(now)
+case class Context(initialDate:DateTime){
+  def isRecent(timestamp:DateTime):Boolean = timestamp.isBefore(initialDate)
 }
 ~~~
 
@@ -48,7 +51,7 @@ This works, but it removes domain constraints from our method.
 
 #### Wrapper class
 
-We can create a case class to wrap the `DateTime`, and use it for `receivedDate` instead of `DateTime`
+We can create a case class to wrap the `DateTime`, and use it for `receivedDate`.
 
 ~~~
 case class Timestamp(t:DateTime)
@@ -58,16 +61,18 @@ case class Email(
                 .
                 receivedDate: Timestamp
                 )
-ase class Context(now:DateTime){
-  def isRecent(timestamp:Timestamp):Boolean = timestamp.t.isBefore(now)
+ase class Context(initialDate:DateTime){
+  def isRecent(timestamp:Timestamp):Boolean = timestamp.t.isBefore(initialDate)
 }
 ~~~
 
 That would preserve the semantics, and it adds some "documentation". The problem is that it's just a wrapper, and at the call site is possible to do something like `isRecent(Timestamp(someDate))`, which kind of defeats the purpose. If at the call site you don't care  about the `DateTime`, then why would you care inside `isRecent`?
 
+Of course you could make the constructor of `Timestamp` private, or the whole class private within `Email`, but that would add _a lot_ of complexity once you need to also know if something other than an `Email` `isRecent`. Too much entanglement.
+
 ### What about inheritance?
 
-Another use case is when several datatypes share several properties, but it makes no sense to have them in the same hierarchy. For example `Email` and `TimeProposed` need a `timestamp`, they also could have an... `_id`. It's possible to make a trait for `Timestamp` and another for `WithID`, and then this two classes would just implement those traits. I'm very skeptical about that solution. It seems to lead to a lot of entanglement. At least that's what I have seen in java codebases. I don't think that it can be done "right" by most people, including me. With typeclasses you just add an instance for that datatype. No meaningless hierarchies needed, as we'll see below.
+When several datatypes share several properties, but it makes no sense to have them in the same hierarchy. For example `Email` and `TimeProposed` need a `timestamp`, but they also could have an `_id`. It's possible to make a trait for `Timestamp` and another for `WithID`, and then this two classes would just implement those traits. I'm very skeptical about that solution. It leads to more entanglement and very complex hierarchies. At least that's what I have seen in java codebases. I don't think that it can be done "right" by most people, including me. With typeclasses you just add an instance for that datatype. No meaningless hierarchies needed, as we'll see below.
 
 
 
@@ -83,8 +88,8 @@ Which is rather convenient, and it looks exactly like the first version. The imp
 
 
 ~~~
-case class Context(now:DateTime){
-  def isRecent[T:Timestamp](t:T):Boolean = t.timestamp.isBefore(now)
+case class Context(initialDate:DateTime){
+  def isRecent[T:Timestamp](t:T):Boolean = t.timestamp.isBefore(initialDate)
 }
 ~~~
 This what we know about the method:
@@ -96,7 +101,7 @@ This what we know about the method:
 With a typeclass we can define the expected property of the argument. 
 
 ___
->`[T:Timestamp]` is the same as adding `(implicit ts:Timestamp[T])` 
+>`[T:Timestamp]` is the same as adding `(implicit ts:Timestamp[T])` to the method signature
 >
 > You also can have several typeclasses stacked up,
 `[T:Timestamp:Speaker]` would be equivalent to `(implicit ts:Timestamp[T], sp:Speaker[T])`
@@ -144,12 +149,12 @@ Now we have the instances we want for timestamp, i.e. the data types that have t
  }
 ~~~
 
-The implicit class wraps _every_ type, and will throw a compile error if the method `timestamp` is invoked on a datatype with no instance for `Timestamp`.
+The implicit class wraps _every_ type, and throws a compile error if the method `timestamp` is invoked on a datatype with no instance for `Timestamp`.
 
 ~~~
 import Timestamp.Syntax
-case class Context(now:DateTime){
-  def isRecent[T:Timestamp](t:T):Boolean = t.timestamp.isBefore(now)
+case class Context(initialDate:DateTime){
+  def isRecent[T:Timestamp](t:T):Boolean = t.timestamp.isBefore(initialDate)
 }
 ~~~
 
@@ -161,16 +166,17 @@ For the case when `isRecent` just receives a `DateTime`, the call site is very e
 isRecent(email.receivedDate)
 ~~~
 
-In this case however:
+In this case however(with the typeclass):
 
 ~~~
 isRecent(email)
 ~~~
 
-We cannot know how `isRecent` is using `Email`. So in a way, it can be considered harder to read. I rather think that the implementation detail was hidden. On the other hand, the signature is enough to find out that information, the name helps, but is not the only source. 
+We cannot know how `isRecent` is using `Email`. So in a way, it can be considered harder to read. I rather think that the implementation detail is not leaking. On the other hand, the signature is enough to find out that information, the name helps, but is not the only source. 
 
-The tradeoffs of typeclasses seems to be: hide information at the call site, but make the methods easier to understand and learn. And also add more domain constraints to your code at the type level, making it closer to correctness.
+The tradeoffs of typeclasses seems to be: hide information at the call site, but make the methods easier to understand and learn. And also add more domain constraints to your code at the type level, making it closer to correctness, since you need to know _at compile time_ if the object that you are passing to the method is "allowed".
 
+I strongly recommend to read **Scrap Your Type Class Boilerplate** in the _References_ section, for a better understanding of the scala machinery for typeclasses.
 
 # Bonus
 
@@ -201,7 +207,7 @@ implicit def coproduct[H, C <: Coproduct](
 
 There is _a lot_ going on there, enough for another post, but if you are interested in this kind of programming you will need shapeless.
 
-#### References
+# References
 
 - [Parametricity, Types are Documentation - Tony Morris](https://www.youtube.com/watch?v=BtEEZa_Q8Vw)
 - [Theorems for free - Philip Walder](https://www.mpi-sws.org/~dreyer/tor/papers/wadler.pdf)
