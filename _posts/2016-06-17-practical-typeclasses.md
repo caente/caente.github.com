@@ -9,7 +9,7 @@ tags: [scala, type, typeclass]
 # Motivation
 
 
-When programming, we usually need to write a method that has a very strong semantic meaning, for instance:
+When programming, we usually need to write a method that has a very strong domain semantics, for instance:
 
 ~~~
 case class Context(now:DateTime){
@@ -17,7 +17,7 @@ case class Context(now:DateTime){
 }
 ~~~
 
-This method is responding a "question": is this `Email` recent? The problem is that `Email` has many fields, which one is going to be used here?
+This method is responding to a "question": is this `Email` recent? But that `Email` has many fields, which one is going to be used here?
 
 ~~~
   def isRecent(email:Email):Boolean = email.sentDate.isBefore(now)
@@ -39,7 +39,7 @@ The only way to know for sure is to look into the source code. This example is t
 
 ### Alternatively
 
-A very common approach, that I actually recommend over what's next, is to strip the method of semantic meaning:
+A very common approach, that I actually recommend over what's next, is to strip the method of semantis:
 
 ~~~
 case class Context(now:DateTime){
