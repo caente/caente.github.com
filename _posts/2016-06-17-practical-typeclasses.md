@@ -9,7 +9,7 @@ tags: [scala, type, typeclass]
 # Motivation
 
 
-When programming, we usually need to write a method that has a very strong domain semantics, for instance:
+When programming, we usually need to write a method that has very strong domain semantics, for instance:
 
 ~~~
 case class Context(now:DateTime){
@@ -17,25 +17,7 @@ case class Context(now:DateTime){
 }
 ~~~
 
-This method is responding to a "question": is this `Email` recent? But that `Email` has many fields, which one is going to be used here?
-
-~~~
-  def isRecent(email:Email):Boolean = email.sentDate.isBefore(now)
-~~~
-
-or
-
-~~~
-  def isRecent(email:Email):Boolean = email.receivedDate.isBefore(now)
-~~~
-
-or even
-
-~~~
-  def isRecent(email:Email):Boolean = email.from.broker.isDefined
-~~~
-
-The only way to know for sure is to look into the source code. This example is trivial, but when most of your methods receive big objects like `Email`, it's hard to know what their responsibilities are, since there will be occasions when the name will not be very clear.
+This method is responding to a "question": Is this `Email` recent? From looking at the signature we learn nothing about it's inner workings. The name helps, but wouldn't it be great if the name wasn't the _only_ source of information? What if we want to know other things about `Email`s `Person`s, etc. Having all this methods will make very hard to understand what their responsibilities are.
 
 ### Alternatively
 
@@ -43,7 +25,7 @@ There are two approaches that I actually recommend over typeclasses for most sit
 
 #### No semantics
 
-We don't care about the "meaning" of the  `DateTime` that we will pass to `isRecent`.
+We don't care about the "meaning" of the  `DateTime` that we will passed to `isRecent`.
 
 ~~~
 case class Context(now:DateTime){
@@ -55,7 +37,7 @@ This works, but it removes domain constraints from our program.
 
 #### Wrapper class
 
-We create a case class to wrap the `DateTime`, and use it for `receivedDate` instead of `DateTime`
+We can create a case class to wrap the `DateTime`, and use it for `receivedDate` instead of `DateTime`
 
 ~~~
 case class Timestamp(t:DateTime)
@@ -70,11 +52,11 @@ ase class Context(now:DateTime){
 }
 ~~~
 
-That would preserve the semantics, and it adds some "documentation". The problem is that it's just a wrapper, and at the call site is possible to do something like `isRecent(Timestamp(someDate))`, which kind of defeats the purpose. If at the call site you don't care  about the right `DateTime`, then why would you care in `isRecent`?
+That would preserve the semantics, and it adds some "documentation". The problem is that it's just a wrapper, and at the call site is possible to do something like `isRecent(Timestamp(someDate))`, which kind of defeats the purpose. If at the call site you don't care  about the `DateTime`, then why would you care inside `isRecent`?
 
 # Typeclasses for semantics with safety
 
-The typeclass will "wrap" `Email`, and the call site will be something like:
+The typeclass "wraps" `Email`, `isRecent` with a typeclass will be used like this:
 
 ~~~
 context.isRecent(email)
@@ -106,7 +88,7 @@ Even without being very familiar with context bounds, it's kind of obvious that 
 
 If you are interested in doing the above, you will quickly notice that there is no way `T` will have a *member* called `timestamp`, because, well, it's just a generic type. It has stuff like `toString` and `equals`, because java, but that's about it.
 
-This is how we "declare" the typeclass, just a trait, and a method. The parameter `T` is what ever will be "wrapped" by `Timestamp`.
+This is how we "declare" the typeclass, just a trait, and a method. The parameter `T` is what will be "wrapped" by `Timestamp`.
 
 ~~~
  trait Timestamp[T]{
@@ -150,7 +132,7 @@ case class Context(now:DateTime){
 
 # Practicality
 
-For the case when `isRecent` just receives a `DateTime`, the call site seems very elquent:
+For the case when `isRecent` just receives a `DateTime`, the call site is very elquent, we can tell what property of `Email` is being used.
 
 ~~~
 isRecent(email.receivedDate)
@@ -162,16 +144,18 @@ In this case however:
 isRecent(email)
 ~~~
 
-We cannot know at first glance what property of `Email` is being used. So in a way, it can be considered less simple or less readable. But, if someone would want to know what `isRecent` does, they wouldn't need to look into the source code, but rather, only the signature, and they would need to find an instance of `Timestamp` for the datatype.
+We cannot know how `isRecent` is using `Email`. So in a way, it can be considered harder to read. I rather think that the implementation detail was hidden. On the other hand, the signature is enough to find out that information, the name helps, but is not the only source.
 
-So the trade off seems to be: Lose readability at the call site, but make the methods easier to understand and learn. And also add more domain constraints to your code, making it closer to be correct.
+Another use case is when several datatypes share some property, but it makes no sense to have them in the same hierarchy. For example `Email` and `TimeProposed`, they both need a `timestamp`, they both could have an... `_id`. It's possible to make a trait for `Timestamp` and another for `WithID`, and then this two classes would just implement those traits. I'm very skeptical about that solution. It seems to lead to a lot of entanglement. At least that's what I have seen in java codebases. I don't think that it can be done "right" by most people, including me. With typeclasses you just add an instance for that datatype. No meaningless hierarchies needed.
+
+The tradeoffs of typeclasses seems to be: hide information at the call site, but make the methods easier to understand and learn. And also add more domain constraints to your code, making it closer to correctness.
 
 
 # Bonus
 
 ### What happens with a sealed trait
 
-If you are interested in how to make instances of sealed traits, the most straightforward method is with shapeless. First, you need to create the instances for each of the "children" of the sealed trait, and include this on the companion object `Timestamp`.
+If you are interested in how to make instances of sealed traits, the most straightforward method is with shapeless. First, you need to create the instances for each of the "children" of the sealed trait, and then include this on the companion object `Timestamp`.
 
 ~~~
 
@@ -194,7 +178,7 @@ implicit def coproduct[H, C <: Coproduct](
 
 ~~~
 
-There is _a lot_ going on there, enough for another post. Shapeless is an indispensable tool to write this kind of code in scala, aka safer and more correct code. You are basically _proving_ constraints of your domain to the compiler.
+There is _a lot_ going on there, enough for another post. Shapeless is an indispensable tool to write this kind of code in scala, i.e. safer and more correct. You are basically _proving_ constraints of your domain to the compiler.
 
 #### References
 
