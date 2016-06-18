@@ -9,7 +9,9 @@ tags: [scala, type, typeclass]
 
 # Intended audience
 
-You are aware of the existence of typeclasses, but you are not sure where or when to use them, and you are mainly writing domain specific code. This post is to provide some guidelines for how and why use typeclasses. You are also familiar with scala, with traits, companion objects and similar machinery.
+You are aware of the existence of typeclasses, but you are not sure where or when to use them, and you are mainly writing domain specific code. This post is to provide some guidelines for how and why use typeclasses. 
+
+You are also familiar with scala, with traits, companion objects and similar machinery.
 
 Inspired by [Strategic Scala Style: Designing Datatypes](http://www.lihaoyi.com/post/StrategicScalaStyleDesigningDatatypes.html) I'll be using _datatype_ when referring to instances of classes and other data-like types, and _type_ for generic types like `T`.
 
