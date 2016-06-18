@@ -86,7 +86,7 @@ Even without being very familiar with context bounds in scala, it's kind of obvi
 
 ### How to write a typeclass
 
-If you are interested in doing the above, you will quickly notice that there is no way `T` will have a *member* called `timestamp`, since it's just a generic type. It has stuff like `toString` and `equals`, because java, but that's about it.
+If you are interested in doing the above, you will quickly notice that there is no way `T` will have a *member* called `timestamp`, since it's just a generic type. It has stuff like `toString` and `equals`, because java, but that's about it. We'll get there, but first let's create the typeclass.
 
 This is how we "declare" the typeclass, just a trait, and a method. The parameter `T` is what will be "wrapped" by `Timestamp`.
 
@@ -121,7 +121,7 @@ Now we have the instances we want for timestamp, i.e. the data types that have t
  }
 ~~~
 
-The implicit class wraps _every_ type, and will throw a compile error if the method `timestamp` is invoked on a datatype with no instance of `Timestamp`.
+The implicit class wraps _every_ type, and will throw a compile error if the method `timestamp` is invoked on a datatype with no instance for `Timestamp`.
 
 ~~~
 import Timestamp.Syntax
@@ -146,9 +146,9 @@ isRecent(email)
 
 We cannot know how `isRecent` is using `Email`. So in a way, it can be considered harder to read. I rather think that the implementation detail was hidden. On the other hand, the signature is enough to find out that information, the name helps, but is not the only source.
 
-Another use case is when several datatypes share several properties, but it makes no sense to have them in the same hierarchy. For example `Email` and `TimeProposed`, they both need a `timestamp`, they both could have an... `_id`. It's possible to make a trait for `Timestamp` and another for `WithID`, and then this two classes would just implement those traits. I'm very skeptical about that solution. It seems to lead to a lot of entanglement. At least that's what I have seen in java codebases. I don't think that it can be done "right" by most people, including me. With typeclasses you just add an instance for that datatype. No meaningless hierarchies needed.
+Another use case is when several datatypes share several properties, but it makes no sense to have them in the same hierarchy. For example `Email` and `TimeProposed` need a `timestamp`, they also could have an... `_id`. It's possible to make a trait for `Timestamp` and another for `WithID`, and then this two classes would just implement those traits. I'm very skeptical about that solution. It seems to lead to a lot of entanglement. At least that's what I have seen in java codebases. I don't think that it can be done "right" by most people, including me. With typeclasses you just add an instance for that datatype. No meaningless hierarchies needed.
 
-The tradeoffs of typeclasses seems to be: hide information at the call site, but make the methods easier to understand and learn. And also add more domain constraints to your code, making it closer to correctness.
+The tradeoffs of typeclasses seems to be: hide information at the call site, but make the methods easier to understand and learn. And also add more domain constraints to your code at the type level, making it closer to correctness.
 
 
 # Bonus
@@ -178,7 +178,7 @@ implicit def coproduct[H, C <: Coproduct](
 
 ~~~
 
-There is _a lot_ going on there, enough for another post. Shapeless is an indispensable tool to write this kind of code in scala, i.e. safer and more correct. You are basically _proving_ constraints of your domain to the compiler.
+There is _a lot_ going on there, enough for another post, but if you are interested in this kind of programming you will need shapeless.
 
 #### References
 
