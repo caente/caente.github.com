@@ -6,6 +6,11 @@ category: Scala
 tags: [scala, type, typeclass]
 ---
 {% include JB/setup %}
+
+# Intended audience
+
+You are aware of the existence of typeclasses, but you are not sure where or when to use them. This post is to provide some guidelines for how and why use typeclasses. This post is also oriented to people writing domain specific software, not libraries. For libraries the use cases of typeclasses are more abstract, although the principles are similar.
+
 # Motivation
 
 
@@ -17,15 +22,21 @@ case class Context(now:DateTime){
 }
 ~~~
 
-This method is responding to a "question": Is this `Email` recent? From looking at the signature we learn nothing about it's inner workings. The name helps, but wouldn't it be great if the name wasn't the _only_ source of information? What if we want to know other things about `Email`s `Person`s, etc. Having all this methods will make very hard to understand what their responsibilities are.
+This method is responding to a "question": Is this `Email` recent? From looking at the signature we learn nothing about it's inner workings. The name helps, but it's the _only_ source of information. What if we want to know other things about `Email`s, `Person`s, etc; that involve some logic? Having too many of these methods will really hinder the readability, and I dare to say, simplicity of the code.
 
 ### Alternatively
 
 There are two approaches that I actually recommend over typeclasses for most situations.
 
+In both cases the usage would be:
+
+```
+isRecent(email.receivedDate)
+```
+
 #### No semantics
 
-We don't care about the "meaning" of the  `DateTime` that we will passed to `isRecent`.
+We don't care about the "meaning" of the  `DateTime` that we passed to `isRecent`.
 
 ~~~
 case class Context(now:DateTime){
@@ -33,7 +44,7 @@ case class Context(now:DateTime){
 }
 ~~~
 
-This works, but it removes domain constraints from our program.
+This works, but it removes domain constraints from our method.
 
 #### Wrapper class
 
@@ -54,9 +65,15 @@ ase class Context(now:DateTime){
 
 That would preserve the semantics, and it adds some "documentation". The problem is that it's just a wrapper, and at the call site is possible to do something like `isRecent(Timestamp(someDate))`, which kind of defeats the purpose. If at the call site you don't care  about the `DateTime`, then why would you care inside `isRecent`?
 
+### What about inheritance?
+
+Another use case is when several datatypes share several properties, but it makes no sense to have them in the same hierarchy. For example `Email` and `TimeProposed` need a `timestamp`, they also could have an... `_id`. It's possible to make a trait for `Timestamp` and another for `WithID`, and then this two classes would just implement those traits. I'm very skeptical about that solution. It seems to lead to a lot of entanglement. At least that's what I have seen in java codebases. I don't think that it can be done "right" by most people, including me. With typeclasses you just add an instance for that datatype. No meaningless hierarchies needed, as we'll see below.
+
+
+
 # Typeclasses for semantics with safety
 
-The typeclass "wraps" `Email`, `isRecent` with a typeclass will be used like this:
+The typeclass  is also a "wrapper" for `Email`. The usage of `isRecent` with a typeclass will be like this:
 
 ~~~
 context.isRecent(email)
@@ -64,22 +81,28 @@ context.isRecent(email)
 
 Which is rather convenient, and it looks exactly like the first version. The implementation is as follows:
 
+
 ~~~
 case class Context(now:DateTime){
   def isRecent[T:Timestamp](t:T):Boolean = t.timestamp.isBefore(now)
 }
 ~~~
+This what we know about the method:
 
 - There is no reference to `Email`
 - `T` is some type, nothing more
-- `Timestamp` is a typeclass -- I strongly recommend that typeclasses do _one_ thing
+- `Timestamp` is a typeclass -- I strongly recommend that typeclasses do only _one_ thing
 
 With a typeclass we can define the expected property of the argument. 
 
 ___
->>>>>>>`T:Timestamp` is the same as adding `(implicit ts:Timestamp[T])` 
+>`[T:Timestamp]` is the same as adding `(implicit ts:Timestamp[T])` 
+>
+> You also can have several typeclasses stacked up,
+`[T:Timestamp:Speaker]` would be equivalent to `(implicit ts:Timestamp[T], sp:Speaker[T])`
 
 ___
+
 
 Even without being very familiar with context bounds in scala, it's kind of obvious that the only thing we know about `T` is that it has a `Timestamp`, and we know this by _looking at the signature_.
 
@@ -130,7 +153,7 @@ case class Context(now:DateTime){
 }
 ~~~
 
-# Practicality
+# Conclusions
 
 For the case when `isRecent` just receives a `DateTime`, the call site is very elquent, we can tell what property of `Email` is being used.
 
@@ -144,16 +167,14 @@ In this case however:
 isRecent(email)
 ~~~
 
-We cannot know how `isRecent` is using `Email`. So in a way, it can be considered harder to read. I rather think that the implementation detail was hidden. On the other hand, the signature is enough to find out that information, the name helps, but is not the only source.
-
-Another use case is when several datatypes share several properties, but it makes no sense to have them in the same hierarchy. For example `Email` and `TimeProposed` need a `timestamp`, they also could have an... `_id`. It's possible to make a trait for `Timestamp` and another for `WithID`, and then this two classes would just implement those traits. I'm very skeptical about that solution. It seems to lead to a lot of entanglement. At least that's what I have seen in java codebases. I don't think that it can be done "right" by most people, including me. With typeclasses you just add an instance for that datatype. No meaningless hierarchies needed.
+We cannot know how `isRecent` is using `Email`. So in a way, it can be considered harder to read. I rather think that the implementation detail was hidden. On the other hand, the signature is enough to find out that information, the name helps, but is not the only source. 
 
 The tradeoffs of typeclasses seems to be: hide information at the call site, but make the methods easier to understand and learn. And also add more domain constraints to your code at the type level, making it closer to correctness.
 
 
 # Bonus
 
-### What happens with a sealed trait
+### What can we do with a sealed trait
 
 If you are interested in how to make instances of sealed traits, the most straightforward method is with shapeless. First, you need to create the instances for each of the "children" of the sealed trait, and then include this on the companion object `Timestamp`.
 
