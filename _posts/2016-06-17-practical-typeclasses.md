@@ -13,7 +13,7 @@ You are aware of the existence of typeclasses, but you are not sure where or whe
 
 You are also familiar with scala, with traits, companion objects and similar machinery.
 
-Inspired by [Strategic Scala Style: Designing Datatypes](http://www.lihaoyi.com/post/StrategicScalaStyleDesigningDatatypes.html) I'll be using _datatype_ when referring to instances of classes and other data-like types, and _type_ for generic types like `T`.
+Inspired by [Strategic Scala Style: Designing Datatypes](http://www.lihaoyi.com/post/StrategicScalaStyleDesigningDatatypes.html), I'll be using _datatype_ when referring to instances of classes and other data-like types, and _type_ for generic types like `T`.
 
 # Motivation
 
