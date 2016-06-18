@@ -9,7 +9,7 @@ tags: [scala, type, typeclass]
 
 # Intended audience
 
-You are aware of the existence of typeclasses, but you are not sure where or when to use them, and you are mainly writing domain specific code. This post is to provide some guidelines for how and why use typeclasses. 
+You are aware of the existence of typeclasses, but you are not sure where or when to use them, and you are mainly writing domain specific code. This post is to provide some guidance for how and why use typeclasses. 
 
 You are also familiar with scala, with traits, companion objects and similar machinery.
 
