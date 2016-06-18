@@ -194,8 +194,7 @@ implicit def coproduct[H, C <: Coproduct](
 
 ~~~
 
-There is _a lot_ going on there, enough for another post. Shapeless is an indispensable tool to write this kind of code in scala, aka safer and more correct code.
-Since you are basically _proving_ constraints of your domain to the compiler.
+There is _a lot_ going on there, enough for another post. Shapeless is an indispensable tool to write this kind of code in scala, aka safer and more correct code. You are basically _proving_ constraints of your domain to the compiler.
 
 #### References
 
