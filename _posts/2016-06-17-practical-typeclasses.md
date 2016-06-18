@@ -122,7 +122,7 @@ case class Context(now:DateTime){
 
 ### What happens with a sealed trait
 
-If you are interested in how make instances of sealed traits, well you can go the shapeless way. First, you need to create the instances for each of the "children" of the sealed trait, and include this on the companion object `Timestamp`.
+If you are interested in how to make instances of sealed traits, well you can go the shapeless way. First, you need to create the instances for each of the "children" of the sealed trait, and include this on the companion object `Timestamp`.
 
 ~~~
 
