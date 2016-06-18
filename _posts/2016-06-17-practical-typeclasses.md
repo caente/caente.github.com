@@ -11,6 +11,8 @@ tags: [scala, type, typeclass]
 
 You are aware of the existence of typeclasses, but you are not sure where or when to use them, and you are mainly writing domain specific code. This post is to provide some guidelines for how and why use typeclasses. You are also familiar with scala, with traits, companion objects and similar machinery.
 
+Inspired by [Strategic Scala Style: Designing Datatypes](http://www.lihaoyi.com/post/StrategicScalaStyleDesigningDatatypes.html) I'll be using _datatype_ when referring to instances of classes and other data-like types, and _type_ for generic types like `T`.
+
 # Motivation
 
 
@@ -25,7 +27,13 @@ case class Context(initialDate:DateTime){
 > The Context class is completely irrelevant four our case,
 > but it makes the scenario to look more realistic
 
+----------
+
 This method is responding to a "question": Is this `Email` recent? From looking at the signature we learn nothing about it's inner workings. The name helps, but it's the _only_ source of information. What if we want to know other things about `Email`s, `Person`s, etc; that involve some logic? Having too many of these methods will really hinder the readability, and I dare to say, the simplicity of the code.
+
+### The Problem
+
+We want methods like `isRecent` -- where the semantics of the domain matter -- and we want it to be easy to understand, and safer to use than merely pass a big fat object as an argument.
 
 ### Alternatives
 
@@ -66,13 +74,13 @@ ase class Context(initialDate:DateTime){
 }
 ~~~
 
-That would preserve the semantics, and it adds some "documentation". The problem is that it's just a wrapper, and at the call site is possible to do something like `isRecent(Timestamp(someDate))`, which kind of defeats the purpose. If at the call site you don't care  about the `DateTime`, then why would you care inside `isRecent`?
+That would certainly preserve the semantics. The problem is that it's just a wrapper, and at the call site is possible to do something like `isRecent(Timestamp(someDate))`, which kind of defeats the purpose. If at the call site you don't care about the `DateTime`, then why would you care inside `isRecent`?
 
-Of course you could make the constructor of `Timestamp` private, or the whole class private within `Email`, but that would add _a lot_ of complexity once you need to also know if something other than an `Email` `isRecent`. Too much entanglement.
+Of course you could make the constructor of `Timestamp` private, or the whole class private within `Email`, but that would add _a lot_ of complexity, once you need to also know if something other than an `Email` `isRecent`. Too much entanglement.
 
 ### What about inheritance?
 
-When several datatypes share several properties, but it makes no sense to have them in the same hierarchy. For example `Email` and `TimeProposed` need a `timestamp`, but they also could have an `_id`. It's possible to make a trait for `Timestamp` and another for `WithID`, and then this two classes would just implement those traits. I'm very skeptical about that solution. It leads to more entanglement and very complex hierarchies. At least that's what I have seen in java codebases. I don't think that it can be done "right" by most people, including me. With typeclasses you just add an instance for that datatype. No meaningless hierarchies needed, as we'll see below.
+When several datatypes share several properties. For example `Email` and `TimeProposed` need a `timestamp`, but they also could have an `_id`. It's possible to make a trait for `Timestamp` and another for `WithID`, and then this two classes would just implement those traits. I'm very skeptical about that solution. It leads to more entanglement and very complex hierarchies. At least that's what I have seen in java codebases. I don't think that it can be done "right" by most people, including me. With typeclasses you just add an instance for that datatype. No meaningless hierarchies needed, as we'll see below.
 
 
 
@@ -92,9 +100,8 @@ case class Context(initialDate:DateTime){
   def isRecent[T:Timestamp](t:T):Boolean = t.timestamp.isBefore(initialDate)
 }
 ~~~
-This what we know about the method:
+This is what we know about the method:
 
-- There is no reference to `Email`
 - `T` is some type, nothing more
 - `Timestamp` is a typeclass -- I strongly recommend that typeclasses do only _one_ thing
 
@@ -114,9 +121,9 @@ Even without being very familiar with context bounds in scala, it's kind of obvi
 
 ### How to write a typeclass
 
-If you are interested in doing the above, you will quickly notice that there is no way `T` will have a *member* called `timestamp`, since it's just a generic type. It has stuff like `toString` and `equals`, because java, but that's about it. We'll get there, but first let's create the typeclass.
+If you are interested in doing the above, you will quickly notice that there is no way `t` will have a *member* called `timestamp`, since it's just a generic type. It has stuff like `toString` and `equals`, because java, but that's about it. We'll get there, but first let's create the typeclass.
 
-This is how we "declare" the typeclass, just a trait, and a method. The parameter `T` is what will be "wrapped" by `Timestamp`.
+This is how we will "declare" the typeclass, just a trait, and a method. The parameter `T` is what will be "wrapped" by `Timestamp`.
 
 ~~~
  trait Timestamp[T]{
@@ -133,6 +140,7 @@ We put the implementations in the companion object.
   implicit object emailTimestamp extends Timestamp[Email] {
     def timestamp(t:Email):DateTime = t.receivedDate
   }
+}
 ~~~
 
 Now we have the instances we want for timestamp, i.e. the data types that have the "property" `Timestamp`. As for adding the `timestamp` "member", we can add a `Syntax` implicit class.
@@ -145,7 +153,6 @@ Now we have the instances we want for timestamp, i.e. the data types that have t
   implicit class Syntax[T](t:T){
     def timestamp(implicit ts:Timestamp[T]) = ts.timestamp(t)
   }
-
  }
 ~~~
 
