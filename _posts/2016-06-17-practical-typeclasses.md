@@ -49,7 +49,7 @@ isRecent(email.receivedDate)
 
 #### No semantics
 
-We don't care about the "meaning" of the  `DateTime` that we passed to `isRecent`.
+We don't care about the "meaning" of the  `DateTime` we pass to `isRecent`.
 
 ~~~
 case class Context(initialDate:DateTime){
@@ -71,18 +71,35 @@ case class Email(
                 .
                 receivedDate: Timestamp
                 )
-ase class Context(initialDate:DateTime){
+case class Context(initialDate:DateTime){
   def isRecent(timestamp:Timestamp):Boolean = timestamp.t.isBefore(initialDate)
 }
 ~~~
 
-That would certainly preserve the semantics. The problem is that it's just a wrapper, and at the call site is possible to do something like `isRecent(Timestamp(someDate))`, which kind of defeats the purpose. If at the call site you don't care about the `DateTime`, then why would you care inside `isRecent`?
+That would certainly preserve the semantics. The problem is that it's just a wrapper, and at the call site is possible to do something like `isRecent(Timestamp(someDate))`, which kind of defeats the purpose. If at the call site you don't care about the `DateTime` semantics, then why would you care inside `isRecent`?
 
 Of course you could make the constructor of `Timestamp` private, or the whole class private within `Email`, but that would add _a lot_ of complexity, once you need to also know if something other than an `Email` `isRecent`. Too much entanglement.
 
 ### What about inheritance?
 
-When several datatypes share several properties. For example `Email` and `TimeProposed` need a `timestamp`, but they also could have an `_id`. It's possible to make a trait for `Timestamp` and another for `WithID`, and then this two classes would just implement those traits. I'm very skeptical about that solution. It leads to more entanglement and very complex hierarchies. At least that's what I have seen in java codebases. I don't think that it can be done "right" by most people, including me. With typeclasses you just add an instance for that datatype. No meaningless hierarchies needed, as we'll see below.
+When several datatypes share several properties. For example `Email` and `TimeProposed` need a `timestamp`, but they also could have an `_id`. It's possible to make a trait for `Timestamp` and another for `WithID`, and then this two classes would just implement those traits.
+
+~~~
+trait Timestamp{ def timestamp:DateTime }
+
+trait WithID{def _id:Id }
+
+case class Email(
+  _id: Id,
+  timestamp:DateTime
+) extends Timestamp with WithID
+
+case class Context(initialDate:DateTime){
+  def isRecent(t:Timestamp):Boolean = t.timestamp.isBefore(initialDate)
+}
+~~~
+
+I'm very skeptical about that solution. It leads to more entanglement and very complex hierarchies. At least that's what I have seen in java codebases. Also you need to be in control of the class that have these properties, and need to keep changing _them_, if new requirements change the semantics. With typeclasses you just add an instance for that datatype. No meaningless hierarchies or changes on the datatype are needed, as we'll see below.
 
 
 
