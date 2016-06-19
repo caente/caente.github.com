@@ -21,8 +21,8 @@ Inspired by [Strategic Scala Style: Designing Datatypes](http://www.lihaoyi.com/
 When programming, we usually need to write a method that has very strong domain semantics, for example:
 
 ~~~
-case class Context(initialDate:DateTime){
-  def isRecent(email:Email):Boolean = ???
+case class Context( initialDate:DateTime ){
+  def isRecent( email:Email ):Boolean = ???
 }
 ~~~
 
@@ -44,7 +44,7 @@ There are two approaches that I actually recommend over typeclasses for most sit
 In both cases the usage would be:
 
 ```
-isRecent(email.receivedDate)
+isRecent( email.receivedDate )
 ```
 
 #### No semantics
@@ -52,8 +52,8 @@ isRecent(email.receivedDate)
 We don't care about the "meaning" of the  `DateTime` we pass to `isRecent`.
 
 ~~~
-case class Context(initialDate:DateTime){
-  def isRecent(timestamp:DateTime):Boolean = timestamp.isBefore(initialDate)
+case class Context( initialDate:DateTime ){
+  def isRecent( timestamp:DateTime ):Boolean = timestamp.isBefore( initialDate )
 }
 ~~~
 
@@ -64,15 +64,12 @@ This works, but it removes domain constraints from our method.
 We can create a case class to wrap the `DateTime`, and use it for `receivedDate`.
 
 ~~~
-case class Timestamp(t:DateTime)
-case class Email(
-                .
-                .
-                .
-                receivedDate: Timestamp
-                )
-case class Context(initialDate:DateTime){
-  def isRecent(timestamp:Timestamp):Boolean = timestamp.t.isBefore(initialDate)
+case class Timestamp( t:DateTime )
+
+case class Email( receivedDate: Timestamp )
+
+case class Context( initialDate:DateTime ){
+  def isRecent( timestamp:Timestamp ):Boolean = timestamp.t.isBefore( initialDate )
 }
 ~~~
 
@@ -87,15 +84,12 @@ When several datatypes share several properties. For example `Email` and `TimePr
 ~~~
 trait Timestamp{ def timestamp:DateTime }
 
-trait WithID{def _id:Id }
+trait WithID{ def _id:Id }
 
-case class Email(
-  _id: Id,
-  timestamp:DateTime
-) extends Timestamp with WithID
+case class Email( _id: Id, timestamp:DateTime ) extends Timestamp with WithID
 
-case class Context(initialDate:DateTime){
-  def isRecent(t:Timestamp):Boolean = t.timestamp.isBefore(initialDate)
+case class Context( initialDate:DateTime ){
+  def isRecent( t:Timestamp ):Boolean = t.timestamp.isBefore( initialDate )
 }
 ~~~
 
@@ -105,20 +99,20 @@ I'm very skeptical about that solution. It leads to more entanglement and very c
 
 # Typeclasses for semantics with safety
 
-The main point, from my perspective, of using typeclasses, is that allows to write methods that only take type parameters -- i.e. `isRecent[T](t:T)`. The code written in this manner tends to be simpler and more correct, since it is impossible to make assumptions about the arguments.
+The main point, from my perspective, of using typeclasses, is that allows to write methods that only take type parameters -- i.e. `isRecent[T]( t:T )`. The code written in this manner tends to be simpler and more correct, since it is impossible to make assumptions about the arguments.
 
 The typeclass  is also a "wrapper" for `Email`. The usage of `isRecent` with a typeclass will be like this:
 
 ~~~
-context.isRecent(email)
+context.isRecent( email )
 ~~~
 
 Which is rather convenient, and it looks exactly like the first version. The implementation is as follows:
 
 
 ~~~
-case class Context(initialDate:DateTime){
-  def isRecent[T:Timestamp](t:T):Boolean = t.timestamp.isBefore(initialDate)
+case class Context( initialDate:DateTime ){
+  def isRecent[T:Timestamp]( t:T ):Boolean = t.timestamp.isBefore( initialDate)
 }
 ~~~
 This is what we know about the method:
@@ -129,10 +123,10 @@ This is what we know about the method:
 With a typeclass we can define the expected property of the argument. 
 
 ___
->`[T:Timestamp]` is the same as adding `(implicit ts:Timestamp[T])` to the method signature
+>`[T:Timestamp]` is the same as adding `( implicit ts:Timestamp[T] )` to the method signature
 >
 > You also can have several typeclasses stacked up,
-`[T:Timestamp:Speaker]` would be equivalent to `(implicit ts:Timestamp[T], sp:Speaker[T])`
+`[T:Timestamp:Speaker]` would be equivalent to `( implicit ts:Timestamp[T], sp:Speaker[T] )`
 
 ___
 
@@ -148,7 +142,7 @@ This is how we will "declare" the typeclass, just a trait, and a method. The par
 
 ~~~
  trait Timestamp[T]{
-  def timestamp(t:T):DateTime
+  def timestamp( t:T ):DateTime
  }
 ~~~
 
@@ -159,7 +153,7 @@ We put the implementations in the companion object.
   def apply[T:Timestamp]:Timestamp[T] = implicitly[Timestamp[T]] // for easy "invocation" of the instances
 
   implicit object emailTimestamp extends Timestamp[Email] {
-    def timestamp(t:Email):DateTime = t.receivedDate
+    def timestamp( t:Email ):DateTime = t.receivedDate
   }
 }
 ~~~
@@ -171,8 +165,8 @@ Now we have the instances we want for timestamp, i.e. the data types that have t
  .
  .
  .
-  implicit class Syntax[T](t:T){
-    def timestamp(implicit ts:Timestamp[T]) = ts.timestamp(t)
+  implicit class Syntax[T]( t:T ){
+    def timestamp( implicit ts:Timestamp[T] ) = ts.timestamp( t )
   }
  }
 ~~~
@@ -181,8 +175,8 @@ The implicit class wraps _every_ type, and throws a compile error if the method 
 
 ~~~
 import Timestamp.Syntax
-case class Context(initialDate:DateTime){
-  def isRecent[T:Timestamp](t:T):Boolean = t.timestamp.isBefore(initialDate)
+case class Context( initialDate:DateTime ){
+  def isRecent[T:Timestamp]( t:T ):Boolean = t.timestamp.isBefore( initialDate )
 }
 ~~~
 
@@ -191,13 +185,13 @@ case class Context(initialDate:DateTime){
 For the case when `isRecent` just receives a `DateTime`, the call site is very elquent, we can tell what property of `Email` is being used.
 
 ~~~
-isRecent(email.receivedDate)
+isRecent( email.receivedDate )
 ~~~
 
 In this case however(with the typeclass):
 
 ~~~
-isRecent(email)
+isRecent( email )
 ~~~
 
 We cannot know how `isRecent` is using `Email`. So in a way, it can be considered harder to read. I rather think that the implementation detail is not leaking. On the other hand, the signature is enough to find out that information, the name helps, but is not the only source. 
