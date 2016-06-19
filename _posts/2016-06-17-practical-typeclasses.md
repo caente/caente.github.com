@@ -105,6 +105,8 @@ I'm very skeptical about that solution. It leads to more entanglement and very c
 
 # Typeclasses for semantics with safety
 
+The main point, from my perspective, of using typeclasses, is that allows to write methods that only take type parameters -- i.e. `isRecent[T](t:T)`. The code written in this manner tends to be simpler and more correct, since it is impossible to make assumptions about the arguments.
+
 The typeclass  is also a "wrapper" for `Email`. The usage of `isRecent` with a typeclass will be like this:
 
 ~~~
@@ -202,7 +204,7 @@ We cannot know how `isRecent` is using `Email`. So in a way, it can be considere
 
 The tradeoffs of typeclasses seems to be: hide information at the call site, but make the methods easier to understand and learn. And also add more domain constraints to your code at the type level, making it closer to correctness, since you need to know _at compile time_ if the object that you are passing to the method is "allowed".
 
-I strongly recommend to read **Scrap Your Type Class Boilerplate** in the _References_ section, for a better understanding of the scala machinery for typeclasses.
+I strongly recommend to read **Scrap Your Type Class Boilerplate** in the [References](#references) section, for a better understanding of the scala machinery for typeclasses.
 
 # Bonus
 
