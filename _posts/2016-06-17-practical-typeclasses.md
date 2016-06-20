@@ -15,7 +15,7 @@ You are also familiar with scala, with traits, companion objects and similar mac
 
 Inspired by [Strategic Scala Style: Designing Datatypes](http://www.lihaoyi.com/post/StrategicScalaStyleDesigningDatatypes.html), I'll be using _datatype_ when referring to instances of classes and other data-like types, and _type_ for generic types like `T`.
 
-You are also interested in a more generic way of programming in Scala. If you are more comfortable with the OOP aspect of the language and want it to keep it that way, then perhaps this piece won't make a lot of sense to you, nevertheless I would recommend to watch Tony Morris talk linked in the [References](#references) section. I wouldn't recommend to blindly follow those advices, but there are a lot of good ideas there, and this piece is supposed to help to those interested in follow the main one: Use type parameters as much as possible.
+You are also interested in a more generic way of programming in Scala. If you are more comfortable with the OOP aspect of the language and want it to keep it that way, then perhaps this piece won't make a lot of sense to you, nevertheless I would recommend to watch Tony Morris talk linked in the [References](#references) section. I wouldn't recommend to blindly follow those advices, but there are a lot of good ideas there, and this piece is supposed to help those interested in follow the main one: Use type parameters as much as possible.
 
 # Motivation
 
