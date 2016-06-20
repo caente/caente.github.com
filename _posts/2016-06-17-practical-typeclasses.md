@@ -15,6 +15,8 @@ You are also familiar with scala, with traits, companion objects and similar mac
 
 Inspired by [Strategic Scala Style: Designing Datatypes](http://www.lihaoyi.com/post/StrategicScalaStyleDesigningDatatypes.html), I'll be using _datatype_ when referring to instances of classes and other data-like types, and _type_ for generic types like `T`.
 
+You are also interested in a more generic way of programming in Scala. If you are more comfortable with the OOP aspect of the language and want it to keep it that way, then perhaps this piece won't make a lot of sense to you, nevertheless I would recommend to watch Tony Morris talk linked in the [References](#references) section. I wouldn't recommend to blindly follow those advices, but there are a lot of good ideas there, and this piece is supposed to help to those interested in follow the main one: Use type parameters as much as possible.
+
 # Motivation
 
 
@@ -39,7 +41,9 @@ We want methods like `isRecent` -- where the semantics of the domain matter -- a
 
 ### Alternatives
 
-There are two approaches that I actually recommend over typeclasses for most situations.
+Typeclasses permit to add properties to type parameters when passed to functions. -- i.e. `isRecent[T]( t: T )`. Where there is no data structure from which is possible to "hack" a solution within the method body. The goal is to provide the certainty -- as much as is possible in the JVM -- that the method is only using the arguments in the "allowed" way.
+
+If the above is not a priority for you, then there are some approaches that I actually recommend over typeclasses for most situations.
 
 In both cases the usage would be:
 
@@ -93,13 +97,13 @@ case class Context( initialDate:DateTime ){
 }
 ~~~
 
-I'm very skeptical about that solution. It leads to more entanglement and very complex hierarchies. At least that's what I have seen in java codebases. Also you need to be in control of the class that have these properties, and need to keep changing _them_, if new requirements change the semantics. With typeclasses you just add an instance for that datatype. No meaningless hierarchies or changes on the datatype are needed, as we'll see below.
+I'm very skeptical about that solution. It leads to more entanglement and very complex hierarchies. At least that's what I have seen in java codebases. Also you need to be in control of the class that have these properties, and need to keep changing _them_, if new requirements change the semantics. With typeclasses you just add an instance for that datatype. No meaningless hierarchies or changes on the datatype are needed, as we'll see below. But this could be me being paranoid and battle scarred.
 
 
 
 # Typeclasses for semantics with safety
 
-The main point, from my perspective, of using typeclasses, is that allows to write methods that only take type parameters -- i.e. `isRecent[T]( t:T )`. The code written in this manner tends to be simpler and more correct, since it is impossible to make assumptions about the arguments.
+The main point, of using typeclasses, is that allows to write methods that only take type parameters -- i.e. `isRecent[T]( t:T )`. The code written in this manner tends to be simpler and more correct, since it is impossible to make assumptions about the arguments.
 
 The typeclass  is also a "wrapper" for `Email`. The usage of `isRecent` with a typeclass will be like this:
 
