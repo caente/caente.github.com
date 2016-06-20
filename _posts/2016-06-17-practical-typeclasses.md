@@ -17,6 +17,7 @@ You should be familiar with scala, with traits, companion objects and similar ma
 
 Inspired by [Strategic Scala Style: Designing Datatypes](http://www.lihaoyi.com/post/StrategicScalaStyleDesigningDatatypes.html), I'll be using _datatype_ when referring to instances of classes and other data-like types, and _type_ for generic types like `T`.
 
+This piece **does not** provide a nuanced guide to write typeclasses, for that you should read the excellent article **Scrap Your Type Class Boilerplate** linked in the [References](#references) section. The goal is to provide a rationale as to why and how use typeclasses.
 
 # Motivation
 
