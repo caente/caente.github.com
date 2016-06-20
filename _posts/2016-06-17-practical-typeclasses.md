@@ -25,15 +25,8 @@ This piece **does not** provide a nuanced guide to write typeclasses, for that y
 When programming, we usually need to write a method that has very strong domain semantics, for example:
 
 ~~~
-case class Context( initialDate:DateTime ){
-  def isRecent( email:Email ):Boolean = ???
-}
+def isRecent(initialDate:DateTime, email:Email ):Boolean = ???
 ~~~
-
-> The Context class is completely irrelevant four our case,
-> but it makes the scenario to look more realistic
-
-----------
 
 This method is responding to a "question": Is this `Email` recent? From looking at the signature we learn nothing about it's inner workings. The name helps, but it's the _only_ source of information. What if we want to know other things about `Email`s, `Person`s, etc; that involve some logic? Having too many of these methods will really hinder the readability, and I dare to say, the simplicity of the code.
 
@@ -50,7 +43,7 @@ If the above is not a priority for you, then there are some approaches that I ac
 In both cases the usage would be:
 
 ```
-isRecent( email.receivedDate )
+isRecent( someDate, email.receivedDate )
 ```
 
 #### No semantics
@@ -58,9 +51,7 @@ isRecent( email.receivedDate )
 We don't care about the "meaning" of the  `DateTime` we pass to `isRecent`.
 
 ~~~
-case class Context( initialDate:DateTime ){
-  def isRecent( timestamp:DateTime ):Boolean = timestamp.isBefore( initialDate )
-}
+def isRecent(initialDate:DateTime, timestamp:DateTime ):Boolean = timestamp.isBefore( initialDate )
 ~~~
 
 This works, but it removes domain constraints from our method.
@@ -74,12 +65,10 @@ case class Timestamp( t:DateTime )
 
 case class Email( receivedDate: Timestamp )
 
-case class Context( initialDate:DateTime ){
-  def isRecent( timestamp:Timestamp ):Boolean = timestamp.t.isBefore( initialDate )
-}
+def isRecent( initialDate:DateTime, timestamp:Timestamp ):Boolean = timestamp.t.isBefore( initialDate )
 ~~~
 
-That would certainly preserve the semantics. The problem is that it's just a wrapper, and at the call site is possible to do something like `isRecent(Timestamp(someDate))`, which kind of defeats the purpose. If at the call site you don't care about the `DateTime` semantics, then why would you care inside `isRecent`?
+That would certainly preserve the semantics. The problem is that it's just a wrapper, and at the call site is possible to do something like `isRecent(someDate, Timestamp(receivedDate))`, which kind of defeats the purpose. If at the call site you don't care about the `DateTime` semantics, then why would you care inside `isRecent`?
 
 Of course you could make the constructor of `Timestamp` private, or the whole class private within `Email`, but that would add _a lot_ of complexity, once you need to also know if something other than an `Email` `isRecent`. Too much entanglement.
 
@@ -94,9 +83,7 @@ trait WithID{ def _id:Id }
 
 case class Email( _id: Id, timestamp:DateTime ) extends Timestamp with WithID
 
-case class Context( initialDate:DateTime ){
-  def isRecent( t:Timestamp ):Boolean = t.timestamp.isBefore( initialDate )
-}
+def isRecent(initialDate:DateTime, t:Timestamp ):Boolean = t.timestamp.isBefore( initialDate )
 ~~~
 
 I'm very skeptical about that solution. It leads to more entanglement and very complex hierarchies. At least that's what I have seen in java codebases. Also you need to be in control of the class that have these properties, and need to keep changing _them_, if new requirements change the semantics. With typeclasses you just add an instance for that datatype. No meaningless hierarchies or changes on the datatype are needed, as we'll see below. But this could be me being paranoid and battle scarred.
@@ -110,16 +97,14 @@ The main point, of using typeclasses, is that allows to write methods that only 
 The typeclass  is also a "wrapper" for `Email`. The usage of `isRecent` with a typeclass will be like this:
 
 ~~~
-context.isRecent( email )
+context.isRecent( someDate, email )
 ~~~
 
 Which is rather convenient, and it looks exactly like the first version. The implementation is as follows:
 
 
 ~~~
-case class Context( initialDate:DateTime ){
-  def isRecent[T:Timestamp]( t:T ):Boolean = t.timestamp.isBefore( initialDate)
-}
+def isRecent[T:Timestamp]( initialDate:DateTime, t:T ):Boolean = t.timestamp.isBefore( initialDate)
 ~~~
 This is what we know about the method:
 
@@ -181,9 +166,7 @@ The implicit class wraps _every_ type, and throws a compile error if the method 
 
 ~~~
 import Timestamp.Syntax
-case class Context( initialDate:DateTime ){
-  def isRecent[T:Timestamp]( t:T ):Boolean = t.timestamp.isBefore( initialDate )
-}
+def isRecent[T:Timestamp](initialDate:DateTime, t:T ):Boolean = t.timestamp.isBefore( initialDate )
 ~~~
 
 # Conclusions
@@ -191,13 +174,13 @@ case class Context( initialDate:DateTime ){
 For the case when `isRecent` just receives a `DateTime`, the call site is very elquent, we can tell what property of `Email` is being used.
 
 ~~~
-isRecent( email.receivedDate )
+isRecent( someDate, email.receivedDate )
 ~~~
 
 In this case however(with the typeclass):
 
 ~~~
-isRecent( email )
+isRecent( someDate, email )
 ~~~
 
 We cannot know how `isRecent` is using `Email`. So in a way, it can be considered harder to read. I rather think that the implementation detail is not leaking. On the other hand, the signature is enough to find out that information, the name helps, but is not the only source. 
