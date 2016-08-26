@@ -50,6 +50,7 @@ The point is, you don't want to be at the mercy of whatever your brain picked ou
 Hopefully at this point is obvious what I'm trying to say:
 
 immutability <-> conscious thinking
+
 mutability <-> intuition
 
 It is far fetched, and it only makes sense under the lens of this piece. And the conclusion is hardly surprising:
