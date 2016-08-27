@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Practical Typeclasses - WIP"
+title: "Practical Typeclasses"
 description: ""
 category: Scala
 tags: [scala, type, typeclass]
