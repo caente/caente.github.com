@@ -9,7 +9,9 @@ tags: [scala, type, typeclass]
 
 # Intended audience
 
-You are aware of the existence of typeclasses, but you are not sure where or when to use them, and you are mainly writing production code. This post is to provide some guidance for how and why use typeclasses. 
+You are aware of the existence of typeclasses, but you are not sure where or when to use them, and you are mainly writing domain specific code. This post is to provide some guidance for how and why use typeclasses. 
+
+You are also interested in a more generic way of programming in Scala. If you are more comfortable with the OOP aspect of the language and want it to keep it that way, then perhaps this piece won't make a lot of sense to you, nevertheless I would recommend to watch Tony Morris talk linked in the [References](#references) section. I wouldn't recommend to blindly follow those advices, but there are a lot of good ideas there, and this piece is trying to help those interested in following the main one: Use type parameters as much as possible.
 
 You should be familiar with scala, with traits, companion objects and similar machinery.
 
@@ -17,160 +19,92 @@ Inspired by [Strategic Scala Style: Designing Datatypes](http://www.lihaoyi.com/
 
 This piece **does not** provide a nuanced guide to write typeclasses, for that you should read the excellent article **Scrap Your Type Class Boilerplate** linked in the [References](#references) section. The goal is to provide a rationale as to why and how use typeclasses.
 
-# The problem
+# Motivation
 
-A Point of Sale system for toy stores(own by the government):
 
-- Each child can only have 2 toys a year
-- To enforce the above restriction, the parents receive a yearly book with coupons
-- The coupons are not only for toys, but also for clothing, or any factory made item.
-- The government is trying a pilot program to decide if the coupons book can be automatized. It's starting with toys.
-
-The users of our system are the employees of the stores. They need to:
-
-1. be assholes
+When programming, we usually need to write a method that has very strong domain semantics, for example:
 
 ~~~
-case class ToyBought(toy:Toy, child:Child, timestamp:DateTime)
-
-case class Toy(_id:Toy.Id, name:String)
-object Toy{
-  case class Id(repr:String)
-}
-
-case class Child(_id:Child.Id, name: String)
-object Child{
-  case class Id(repr:String)
-}
-
-sealed trait ToyOrderResult
-case class ToyOrder(toy: Toy, child:Child) extends ToyOrderResult
-
-def previousToys(child:Child):Seq[ToyBought]
-
-def buyToy(child:Child, toy:Toy, toyHistory:Seq[ToyBought]):ToyOrder
-
-def assignToy(child:Child, toyOrder:ToyOrder):ToyBought
+def isRecent(initialDate:DateTime, email:Email ):Boolean = ???
 ~~~
 
+This method is responding to a "question": Is this `Email` recent? From looking at the signature we learn nothing about it's inner workings. The name helps, but it's the _only_ source of information. What if we want to know other things about `Email`s, `Person`s, etc; that involve some logic? Having too many of these methods will really hinder the readability, and I dare to say, the simplicity of the code.
 
+### The Problem
 
-Let's assume we have a class 
+We want methods like `isRecent` -- where the semantics of the domain matter -- and we want it to be easy to understand, and safer to use than merely pass a big fat object as an argument.
 
-~~~
-case class Email(
-  receivedDate:DateTime,
-  body:String,
-  sentDate:DateTime,
-  from:EmailPerson,
-  to: Seq[EmailPerson]
-  .
-  .
-  .
-  etc.
-)
-~~~
+### Alternatives
 
-If we want to know if an email is recent, we could do this:
+Typeclasses permit to add properties to type parameters when passed to functions. -- i.e. `isRecent[T]( t: T )`. Where there is no data structure from which is possible to "hack" a solution within the method body. The goal is to provide the certainty -- as much as is possible in the JVM -- that the method is only using the arguments in the "allowed" way.
 
-~~~
-def isRecent(referenceDate:DateTime, email:Email ):Boolean = email.receivedDate.isBefore( referenceDate )
-~~~
+If the above is not a priority for you, then there are some approaches that I actually recommend over typeclasses for most situations.
 
-And that's a kind code that I know exists in many codebases, in most of them.
+In both cases the usage would be:
 
-We don't want that. We don't want to pass the _whole_ `Email` object to a method. The object has way too much information in it, more than `isRecent` needs anyway. Besides, what happens if (when) we want to know if a `Person` is recent? or a `CalendarEvent`? The only thing we need there is a `DateTime`. 
-
-### Solutions with no typeclasses
+```
+isRecent( someDate, email.receivedDate )
+```
 
 #### No semantics
 
-If is truly just a `DateTime` we need -- i.e. some data without any domain meaning -- we could, and **we should**, do this:
+We don't care about the "meaning" of the  `DateTime` we pass to `isRecent`.
 
 ~~~
-def isRecent( referenceDate:DateTime, timestamp:DateTime ):Boolean = timestamp.isBefore( referenceDate )
+def isRecent(initialDate:DateTime, timestamp:DateTime ):Boolean = timestamp.isBefore( initialDate )
 ~~~
 
-I recommend this approach 90% of the time. Write your methods/functions without any assumptions about their arguments. 
+This works, but it removes domain constraints from our method.
 
 #### Wrapper class
 
-If we want to preserve the "domain information" on the method signature, we can create a case class to wrap the `DateTime`, and use it for `receivedDate`.
+We can create a case class to wrap the `DateTime`, and use it for `receivedDate`.
 
 ~~~
 case class Timestamp( t:DateTime )
 
 case class Email( receivedDate: Timestamp )
 
-def isRecent( referenceDate:DateTime, timestamp:Timestamp ):Boolean = timestamp.t.isBefore( referenceDate )
+def isRecent( initialDate:DateTime, timestamp:Timestamp ):Boolean = timestamp.t.isBefore( initialDate )
 ~~~
 
-That would certainly preserve the "meaning" of `receivedDate`. It will help to anybody reading the method signature. But then you'll need to change `Email` and all usages of `receivedDate` in your code. Also, if it's just a wrapper, at the call site is possible to do something like `isRecent( someDate, Timestamp( receivedDate ) )`, which defeats the purpose. If at the call site you don't care about what `DateTime` means, then why would you care inside `isRecent`?
+That would certainly preserve the semantics. The problem is that it's just a wrapper, and at the call site is possible to do something like `isRecent(someDate, Timestamp(receivedDate))`, which kind of defeats the purpose. If at the call site you don't care about the `DateTime` semantics, then why would you care inside `isRecent`?
+
+Of course you could make the constructor of `Timestamp` private, or the whole class private within `Email`, but that would add _a lot_ of complexity, once you need to also know if something other than an `Email` `isRecent`. Too much entanglement.
 
 ### What about inheritance?
 
-Inheritance is probably the de facto solution for most developers not familiar with typeclasses. It allows to do most things you can do with typeclasses although with more entanglement in my opinion.
+When several datatypes share several properties. For example `Email` and `TimeProposed` need a `timestamp`, but they also could have an `_id`. It's possible to make a trait for `Timestamp` and another for `WithID`, and then this two classes would just implement those traits.
 
 ~~~
 trait Timestamp{ def timestamp:DateTime }
 
-case class Email( _id: Id, timestamp:DateTime ) extends Timestamp 
+trait WithID{ def _id:Id }
 
-def isRecent(referenceDate:DateTime, t:Timestamp ):Boolean = t.timestamp.isBefore( referenceDate )
+case class Email( _id: Id, timestamp:DateTime ) extends Timestamp with WithID
+
+def isRecent(initialDate:DateTime, t:Timestamp ):Boolean = t.timestamp.isBefore( initialDate )
 ~~~
 
-I recommend [this](https://www.reddit.com/r/scala/comments/3bh5g8/what_makes_type_classes_better_than_traits/) interesting thread on reddit about typeclasses vs inheritance.
+I'm very skeptical about that solution. It leads to more entanglement and very complex hierarchies. At least that's what I have seen in java codebases. Also you need to be in control of the class that have these properties, and need to keep changing _them_, if new requirements change the semantics. With typeclasses you just add an instance for that datatype. No meaningless hierarchies or changes on the datatype are needed, as we'll see below. But this could be me being paranoid and battle scarred.
+
+
 
 # Typeclasses for semantics with safety
 
-The main point of using typeclasses is that allows to write methods that only take type parameters. 
+The main point, of using typeclasses, is that allows to write methods that only take type parameters -- i.e. `isRecent[T]( t:T )`. The code written in this manner tends to be simpler and more correct, since it is impossible to make assumptions about the arguments.
 
-This how `isRecent` would be written using a typeclass called `Timestamp`.
-
-~~~
-def isRecent[T:Timestamp]( referenceDate:DateTime, t:T ):Boolean = t.timestamp.isBefore(referenceDate)
-~~~
-
-Technically `t:T` is the same as `t:Any`, but we won't focus on that. Let's assume that `t:T` has no concrete type, as it should be. With that in mind, from the signature we can learn that:
-1 - `t` has _one_ "property" provided by `Timestamp`
-2 - `Timestamp` is a typeclass -- Although we would need to visit the implementations of `Timestamp` to know exactly what how is implemented for `Email`, it's easier to have a good name for a property than for business logic.
-
-Is **better** than:
+The typeclass  is also a "wrapper" for `Email`. The usage of `isRecent` with a typeclass will be like this:
 
 ~~~
-//No semantics
-def isRecent( referenceDate:DateTime, receivedDate:DateTime )
+context.isRecent( someDate, email )
 ~~~
 
-and
+Which is rather convenient, and it looks exactly like the first version. The implementation is as follows:
+
 
 ~~~
-//Inheritance or wrapper
-def isRecent( referenceDate:DateTime, receivedDate:Timestamp ) // where Timestamp is a trait or abstract class or a wrapper class
-~~~
-
-Of course there are always caveats. But the first version, the one with type parameters, is saying that there is some type `T`, that has _one_ property: `Timestamp`. It is similar to the wrapper/inheritance version. Signature wise that is true. But the type parameter version is more scalable, for example:
-
-If we need to add functionality, for example, if it's important who sent the email, we could just add another typeclass: 
-
-~~~
-def isRecent[T:Timestamp:Speaker]( referenceDate:DateTime, t:T ):Boolean
-~~~
-
-It is possible to do this with inheritance (the wrapper just won't cut it):
-
-~~~
-def isRecent(referenceDate:DateTime, t:Timestamp with Speaker):Boolean
-~~~
-
-But at the cost of _modifiying_ the `Email` class. The same goes with any other data structure that we want to use on this method. This is a problem for two reasons:
-
-1 - We might **not control** the datatypes we are using
-
-2 - As said above, we are creating too much entanglement, this is less obvious, but as the requirements change, any entanglement becomes a bottleneck on development.
-
-~~~
-def isRecent[T:Timestamp]( referenceDate:DateTime, t:T ):Boolean = t.timestamp.isBefore( referenceDate)
+def isRecent[T:Timestamp]( initialDate:DateTime, t:T ):Boolean = t.timestamp.isBefore( initialDate)
 ~~~
 This is what we know about the method:
 
@@ -232,7 +166,7 @@ The implicit class wraps _every_ type, and throws a compile error if the method 
 
 ~~~
 import Timestamp.Syntax
-def isRecent[T:Timestamp](referenceDate:DateTime, t:T ):Boolean = t.timestamp.isBefore( referenceDate )
+def isRecent[T:Timestamp](initialDate:DateTime, t:T ):Boolean = t.timestamp.isBefore( initialDate )
 ~~~
 
 # Conclusions
