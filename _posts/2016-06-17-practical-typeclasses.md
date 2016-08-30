@@ -1,15 +1,15 @@
 ---
 layout: post
-title: "Practical Typeclasses"
+title: "Practical type classes"
 description: ""
 category: Scala
-tags: [scala, type, typeclass]
+tags: [scala, type, type class]
 ---
 {% include JB/setup %}
 
 # Intended audience
 
-You are aware of the existence of typeclasses, but you are not sure where or when to use them, and you are mainly writing domain specific code. This post is to provide some guidance for how and why use typeclasses. 
+You are aware of the existence of type classes, but you are not sure where or when to use them, and you are mainly writing domain specific code. This post is to provide some guidance for how and why use type classes. 
 
 You are also interested in a more generic way of programming in Scala. If you are more comfortable with the OOP aspect of the language and want it to keep it that way, then perhaps this piece won't make a lot of sense to you, nevertheless I would recommend to watch Tony Morris talk linked in the [References](#references) section. I wouldn't recommend to blindly follow those advices, but there are a lot of good ideas there, and this piece is trying to help those interested in following the main one: Use type parameters as much as possible.
 
@@ -17,7 +17,7 @@ You should be familiar with scala, with traits, companion objects and similar ma
 
 Inspired by [Strategic Scala Style: Designing Datatypes](http://www.lihaoyi.com/post/StrategicScalaStyleDesigningDatatypes.html), I'll be using _datatype_ when referring to instances of classes and other data-like types, and _type_ for generic types like `T`.
 
-This piece **does not** provide a nuanced guide to write typeclasses, for that you should read the excellent article **Scrap Your Type Class Boilerplate** linked in the [References](#references) section. The goal is to provide a rationale as to why and how use typeclasses.
+This piece **does not** provide a nuanced guide to write type classes, for that you should read the excellent article **Scrap Your Type Class Boilerplate** linked in the [References](#references) section. The goal is to provide a rationale as to why and how use type classes.
 
 # Motivation
 
@@ -36,9 +36,9 @@ We want methods like `isRecent` -- where the semantics of the domain matter -- a
 
 ### Alternatives
 
-Typeclasses permit to add properties to type parameters when passed to functions. -- i.e. `isRecent[T]( t: T )`. Where there is no data structure from which is possible to "hack" a solution within the method body. The goal is to provide the certainty -- as much as is possible in the JVM -- that the method is only using the arguments in the "allowed" way.
+type classes permit to add properties to type parameters when passed to functions. -- i.e. `isRecent[T]( t: T )`. Where there is no data structure from which is possible to "hack" a solution within the method body. The goal is to provide the certainty -- as much as is possible in the JVM -- that the method is only using the arguments in the "allowed" way.
 
-If the above is not a priority for you, then there are some approaches that I actually recommend over typeclasses for most situations.
+If the above is not a priority for you, then there are some approaches that I actually recommend over type classes for most situations.
 
 In both cases the usage would be:
 
@@ -86,15 +86,15 @@ case class Email( _id: Id, timestamp:DateTime ) extends Timestamp with WithID
 def isRecent(initialDate:DateTime, t:Timestamp ):Boolean = t.timestamp.isBefore( initialDate )
 ~~~
 
-I'm very skeptical about that solution. It leads to more entanglement and very complex hierarchies. At least that's what I have seen in java codebases. Also you need to be in control of the class that have these properties, and need to keep changing _them_, if new requirements change the semantics. With typeclasses you just add an instance for that datatype. No meaningless hierarchies or changes on the datatype are needed, as we'll see below. But this could be me being paranoid and battle scarred.
+I'm very skeptical about that solution. It leads to more entanglement and very complex hierarchies. At least that's what I have seen in java codebases. Also you need to be in control of the class that have these properties, and need to keep changing _them_, if new requirements change the semantics. With type classes you just add an instance for that datatype. No meaningless hierarchies or changes on the datatype are needed, as we'll see below. But this could be me being paranoid and battle scarred.
 
 
 
-# Typeclasses for semantics with safety
+# type classes for semantics with safety
 
-The main point, of using typeclasses, is that allows to write methods that only take type parameters -- i.e. `isRecent[T]( t:T )`. The code written in this manner tends to be simpler and more correct, since it is impossible to make assumptions about the arguments.
+The main point, of using type classes, is that allows to write methods that only take type parameters -- i.e. `isRecent[T]( t:T )`. The code written in this manner tends to be simpler and more correct, since it is impossible to make assumptions about the arguments.
 
-The typeclass  is also a "wrapper" for `Email`. The usage of `isRecent` with a typeclass will be like this:
+The type class  is also a "wrapper" for `Email`. The usage of `isRecent` with a type class will be like this:
 
 ~~~
 context.isRecent( someDate, email )
@@ -109,14 +109,14 @@ def isRecent[T:Timestamp]( initialDate:DateTime, t:T ):Boolean = t.timestamp.isB
 This is what we know about the method:
 
 - `T` is some type, nothing more
-- `Timestamp` is a typeclass -- I strongly recommend that typeclasses do only _one_ thing
+- `Timestamp` is a type class -- I strongly recommend that type classes do only _one_ thing
 
-With a typeclass we can define the expected property of the argument. 
+With a type class we can define the expected property of the argument. 
 
 ___
 >`[T:Timestamp]` is the same as adding `( implicit ts:Timestamp[T] )` to the method signature
 >
-> You also can have several typeclasses stacked up,
+> You also can have several type classes stacked up,
 `[T:Timestamp:Speaker]` would be equivalent to `( implicit ts:Timestamp[T], sp:Speaker[T] )`
 
 ___
@@ -125,11 +125,11 @@ ___
 Even without being very familiar with context bounds in scala, it's kind of obvious that the only thing we know about `T` is that it has a `Timestamp`, and we know this by _looking at the signature_.
 
 
-### How to write a typeclass
+### How to write a type class
 
-If you are interested in doing the above, you will quickly notice that there is no way `t` will have a *member* called `timestamp`, since it's just a generic type. It has stuff like `toString` and `equals`, because java, but that's about it. We'll get there, but first let's create the typeclass.
+If you are interested in doing the above, you will quickly notice that there is no way `t` will have a *member* called `timestamp`, since it's just a generic type. It has stuff like `toString` and `equals`, because java, but that's about it. We'll get there, but first let's create the type class.
 
-This is how we will "declare" the typeclass, just a trait, and a method. The parameter `T` is what will be "wrapped" by `Timestamp`.
+This is how we will "declare" the type class, just a trait, and a method. The parameter `T` is what will be "wrapped" by `Timestamp`.
 
 ~~~
  trait Timestamp[T]{
@@ -171,13 +171,13 @@ def isRecent[T:Timestamp](initialDate:DateTime, t:T ):Boolean = t.timestamp.isBe
 
 # Conclusions
 
-For the case when `isRecent` just receives a `DateTime`, the call site is very elquent, we can tell what property of `Email` is being used.
+For the case when `isRecent` just receives a `DateTime`, the call site is very eloquent, we can tell what property of `Email` is being used.
 
 ~~~
 isRecent( someDate, email.receivedDate )
 ~~~
 
-In this case however(with the typeclass):
+In this case however(with the type class):
 
 ~~~
 isRecent( someDate, email )
@@ -185,9 +185,9 @@ isRecent( someDate, email )
 
 We cannot know how `isRecent` is using `Email`. So in a way, it can be considered harder to read. I rather think that the implementation detail is not leaking. On the other hand, the signature is enough to find out that information, the name helps, but is not the only source. 
 
-The tradeoffs of typeclasses seems to be: hide information at the call site, but make the methods easier to understand and learn. And also add more domain constraints to your code at the type level, making it closer to correctness, since you need to know _at compile time_ if the object that you are passing to the method is "allowed".
+The tradeoffs of type classes seems to be: hide information at the call site, but make the methods easier to understand and learn. And also add more domain constraints to your code at the type level, making it closer to correctness, since you need to know _at compile time_ if the object that you are passing to the method is "allowed".
 
-I strongly recommend to read **Scrap Your Type Class Boilerplate** in the [References](#references) section, for a better understanding of the scala machinery for typeclasses.
+I strongly recommend to read **Scrap Your Type Class Boilerplate** in the [References](#references) section, for a better understanding of the scala machinery for type classes.
 
 # Bonus
 

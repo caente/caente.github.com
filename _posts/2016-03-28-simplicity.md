@@ -28,7 +28,7 @@ def diff(dr1:DateRange, dr2:DateRange):List[DateRange] // given two ranges, retu
 
 ~~~
 
-If we where to attempt the implementation of those methods, we would have some messiness initially, but a better abstraction would emerge:
+If we were to attempt the implementation of those methods, we would have some messiness initially, but a better abstraction would emerge:
 
 ~~~
 def days(dateRange:DateRange):List[LocalDate] // returns all the days in a DateRange
@@ -43,7 +43,7 @@ All the desired operations are instantly supported by `List`, along with many ot
 
 ~~~
 days(range1).exists(day) // dayExists
-days(range1).intesect(days(range2)) // intersect
+days(range1).intersect(days(range2)) // intersect
 days(range1).diff(range2) // diff
 ~~~
 

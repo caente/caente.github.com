@@ -12,7 +12,7 @@ I was thinking in a cute analogy between the dichotomies of mutability/immutabil
 
 When you mutate state, e.g. when you keep updating an object that holds any meaningful state; you need to “trust” that state. You will write logic that will "act" based on what it's known in that instant, not on how it got there.
 
-With immutability you *need* to write logic based on the past. There is not such thing as latest state, your code needs to handle all the information up to this instant.
+With immutability you *need* to write logic based on the past. There is no such thing as latest state, your code needs to handle all the information up to this instant.
 
 I'm not sure if my take about immutability only makes sense for the use cases I'm dealing with these days. So let me clarify with an example.
 
@@ -40,11 +40,11 @@ Intuition is not great to analyze the world nor for making decisions if you have
 
 If you try to use intuition for everything, you will be doing lots of wrong assumptions -- the earth is obviously flat, tourists are idiots, people with a different color are sub-humans, etc.
 
-Concious thinking is about pondering context, you wouldn't accept what you think you know something, you will want to understand why things are the way they are, before committing to anything.
+Conscious thinking is about pondering context, you wouldn't accept what you think you know something, you will want to understand why things are the way they are, before committing to anything.
 
 Obviously there is a point where you need to stop and trust your brain, but you can also make a conscious decision about that too. 
 
-The point is, you don't want to be at the mercy of whatever your brain picked up without asking you. Remember you cannot control what you learn. Learning is not a fully concious activity, as the ad/propaganda industry has proved.
+The point is, you don't want to be at the mercy of whatever your brain picked up without asking you. Remember you cannot control what you learn. Learning is not a fully conscious activity, as the ad/propaganda industry has proved.
 
 ## Duality
 
