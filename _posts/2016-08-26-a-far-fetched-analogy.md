@@ -58,4 +58,4 @@ It is far fetched, and it only makes sense under the lens of this piece. And the
 
 You usually should prefer immutability/conscious thinking, since it will allow you to find a solution closer to your real problem -- i.e. less assumptions. But there are moments when you do want to use mutability/intuition. As far as I have seen, _in my life_, performance is the only valid reason for it.
 
-
+Aug 2016

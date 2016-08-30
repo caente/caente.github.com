@@ -95,3 +95,5 @@ def foo(i:Int):String
 
 The code is the most reliable documentation you will ever have about the algorithms used on the project. If it's hard to follow, if the solution was found "by accident", and left like that; it will make it very hard to know _why_ the system is doing certain thing in certain context, i.e. will be hard to debug. It will also be very hard to extend or modify for the same reason. It's then when you start hearing the whispers in your head -- and in slack -- "refactoring, refactoring, refactoring". 
 
+Aug 2016
+
