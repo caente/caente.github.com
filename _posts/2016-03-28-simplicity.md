@@ -11,7 +11,7 @@ Simplicity, as we all know, is important. You hear it all the time. But what is 
 
 I think small functions are a consequence, not a way, of achieving simplicity in code.
 
-Consider this lazy example:
+### Consider this lazy example
 
 ~~~
 import org.joda.time.LocalDate
@@ -48,13 +48,15 @@ days(range1).diff(range2) // diff
 ~~~
 
 
-Where to go from here? Do we still write the implementations of the api but using `days`? Well it depends, right now we have a low level api that allows to express anything we want, as long it can be expressed as a `List[LocalDate]`. We might want another layer on top of it, but why over think it? I would go with `List[LocalDate]` until is obvious that certain operations are too common and can be grouped.
+Where to go from here? Do we still write the implementations of the api but using `days`? Well it depends, right now we have a low level api that allows to express anything we want, as long as it can be expressed as a `List[LocalDate]`. We might want another layer on top of it, but why overthink it? I would go with `List[LocalDate]` until is obvious that certain operations are too common and can be grouped.
 
 Having `LocalDate` as the main abstraction means that if _performance becomes an issue_, we could use `DateRange` or anything else that helps with it. But as it is, it makes it easy to understand that this api is about days/`LocalDate`. Whereas in the initial api the main abstraction was `DateRange` which is a very "opinionated" data structure.
 
-Unfortunately we usually work with conflicting requirements, usually described in a very imperative manner -- i.e. a flow chart. That, with some tight time constraints, makes us to go ahead with whatever abstraction was initially obvious, and squeeze the solution out of it. The code then will not represent a solution of the problem, but rather it'll be some kind of "mechanical accident" that happens to produce the solution you are looking for. We would have gone with `DateRange` and its api. It would have worked, but our code would be hard to read, it'll be very hard to know *how* is it solving the problem.
+Unfortunately we usually work with conflicting requirements, usually described in a very imperative manner -- i.e. a flow chart. That, with some tight time constraints, makes us to go ahead with whatever abstraction was initially obvious, and squeeze the solution out of it. The code then will not represent a solution of the problem, but rather it'll be some kind of "mechanical accident", that happens to produce the solution we are looking for. We could go with `DateRange` and its api. It would work, but our code would be hard to read, it'd be hard to know *how* is it solving the problem.
 
-There is no obvious ways to simplify your code, but you could use some things I do to improve the odds:
+### Actual recommendations
+
+There is no obvious ways to simplify your code, this are some of the things I do to improve odds:
 
 1 -  Try to make your methods as context free as possible. In the example above we would be using `List` to do operations about dates, it can't be more agnostic than that.
 
