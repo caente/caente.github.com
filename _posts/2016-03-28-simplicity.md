@@ -81,7 +81,7 @@ I rather provide the `Int`:
 def foo(i:Int, b:Int):Int = i + b
 ~~~
 
-... and make the transformation to `String` at the call site. If the pattern repeats enough times(for me if is three times), I would consider make a third method that groups the transformation to `String` and the actual call to `foo`
+... and make the transformation to `String` at the call site. If the pattern is repeated enough times(for me if is three times), I would consider make a third method that groups the transformation to `String` and the actual call to `foo`
 
 3 - If I have a method that takes a container, e.g.
 
