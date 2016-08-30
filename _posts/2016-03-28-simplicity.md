@@ -24,7 +24,7 @@ These are some of the operations we want for it:
 ~~~
 def dayExists(dateRange:DateRange, d:LocalDate):Boolean  // checks if certain day exists in the range
 def intersectRanges(dr1:DateRange, dr2:DateRange):Option[DateRange] // given two ranges, return the intersection, or nothing
-def subtractRages(dr1:DateRange, dr2:DateRange):List[DateRange] // given two ranges, return whatever times are not shared between the two
+def subtractRages(dr1:DateRange, dr2:DateRange):List[DateRange] // given two ranges, return whatever times are not in the second and are in the first one
 
 ~~~
 
@@ -43,8 +43,8 @@ All the desired operations are instantly supported by `List`, along with many ot
 
 ~~~
 days(range1).exists(day) // dayExists
-days(range1).intersect(days(range2)) // intersect
-days(range1).diff(range2) // diff
+days(range1).intersectRanges(days(range2)) // intersect
+days(range1).diff(range2) // subtractRages
 ~~~
 
 
