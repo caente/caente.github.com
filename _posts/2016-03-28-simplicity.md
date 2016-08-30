@@ -101,7 +101,7 @@ List(1,2,3).map(foo) // note this is similar to what we do with DateRange -> Lis
 ~~~
 
 ---
-This practices don't make the code simple, but that they *help* me to find simpler patterns in the code.
+This practices won't make the code simpler, but that they *help* to find simpler patterns in the code.
 
 ### Conclusions
 
