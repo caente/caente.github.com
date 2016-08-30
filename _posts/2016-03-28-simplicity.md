@@ -7,9 +7,9 @@ tags: []
 ---
 {% include JB/setup %}
 
-Simplicity, as we all know, is important. You hear it all the time. But what is it? It seems to be related with small functions. All of the readable and simple code out there has small functions.
+Some time ago I was trying to write simple code and failing miserably. I was writing small methods, because that was the obvious thing to do, because all cool projects I've seen had small methods. I used to take a semi-arbitrary chunk if code, give it a name, some arguments, and be happy with it. It usually looked good, but time and changing requirements always made those chunks obsolete too quickly. Requiring refactorings too often. 
 
-I think small functions are a consequence, not a way, of achieving simplicity in code.
+Nowadays I think small functions are a consequence, not a way, of achieving simplicity in code.
 
 ### Consider this lazy example
 
@@ -56,7 +56,7 @@ Unfortunately we usually work with conflicting requirements, usually described i
 
 ### Actual recommendations
 
-There is no obvious ways to simplify your code, this are some of the things I do to improve odds:
+There are no obvious ways to simplify your code, these are some of the practices I follow to improve odds:
 
 1 -  Try to make your methods as context free as possible:
 
