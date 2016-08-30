@@ -58,7 +58,13 @@ Unfortunately we usually work with conflicting requirements, usually described i
 
 There is no obvious ways to simplify your code, this are some of the things I do to improve odds:
 
-1 -  Try to make your methods as context free as possible. In the example above we would be using `List` to do operations about dates, it can't be more agnostic than that.
+1 -  Try to make your methods as context free as possible:
+
+~~~
+def dayExists(dateRange:DateRange, d:LocalDate):Boolean  
+~~~
+
+Is too "aware" of the fact that we are dealing with `DateRange`s in our system, whereas a `List[LocalDate].exists` works as good.
 
 2 - I try to reduce the amount of "data preparation" that a method has to do:
 
@@ -71,29 +77,37 @@ def foo(i:Int, b:String):Int = {
 }
 ~~~
 
-I rather do:
+I rather provide the `Int`:
 
 ~~~ 
 def foo(i:Int, b:Int):Int = i + b
 ~~~
+
+... and make the transformation to `String` at the call site. If the pattern repeats enough times(for me is 3), I would consider make a third method that groups the transformation to `String` and the actual call to `foo`
 
 3 - If I have a method that takes a container, e.g.
 
 
 ~~~
 def foo(ls:List[Int]):List[String]
+
+foo(List(1,2,3)) 
 ~~~
 
 I would explore the possibility of make it about the contained elements:
 
 ~~~
 def foo(i:Int):String
+
+List(1,2,3).map(foo) // note this is similar to what we do with DateRange -> List[LocalDate]
 ~~~
+
+---
+This practices don't make the code simple, but that they *help* me to find simpler patterns in the code.
 
 ### Conclusions
 
-
-The code is the most reliable documentation you will ever have about the algorithms used on the project. If it's hard to follow, if the solution was found "by accident", and left like that; it will make it very hard to know _why_ the system is doing certain thing in certain context, i.e. will be hard to debug. It will also be very hard to extend or modify for the same reason. It's then when you start hearing the whispers in your head -- and in slack -- "refactoring, refactoring, refactoring". 
+The code is the most reliable documentation you will ever have about the algorithms used on a project. If it's hard to follow, if the solution was found "by accident", and left like that; it will be very hard to know _why_ the system is doing certain thing in certain context, i.e. it will be hard to debug. It will also be very hard to extend or modify for the same reason. It's then when you start hearing the whispers in your head -- and in slack -- "refactoring, refactoring, refactoring". 
 
 Aug 2016
 
