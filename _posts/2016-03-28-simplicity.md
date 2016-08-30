@@ -50,7 +50,7 @@ days(range1).diff(range2) // subtractRages
 
 Where to go from here? Do we still write the implementations of the api but using `days`? Well it depends, right now we have a low level api that allows to express anything we want, as long as it can be expressed as `List[LocalDate]`. We might want another layer on top of it, but why overthink it? I would go with `List[LocalDate]` until is obvious that certain operations are too common and can be grouped.
 
-Having `LocalDate` as the main abstraction means that if _performance becomes an issue_, we could use `DateRange` or anything else that helps with it. But as it is, it makes it easy to understand that this api is about days/`LocalDate`. Whereas in the initial api the main abstraction was `DateRange` which is a very "opinionated" data structure.
+Having `LocalDate` as the main abstraction means that, if _performance_ becomes an issue, we could use `DateRange` or anything else that helps with it. But as it is, it makes it easy to understand that this api is about days/`LocalDate`. Whereas in the initial api the main abstraction was `DateRange` which is a very "opinionated" data structure, and ultimately a misleading one, since the problem is obviusly about groups of days, not range of days.
 
 ### Actual recommendations
 
