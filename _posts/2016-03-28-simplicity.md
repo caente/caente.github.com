@@ -7,7 +7,7 @@ tags: []
 ---
 {% include JB/setup %}
 
-Some time ago I was trying to write simple code and failing miserably. I was writing small methods, because that was the obvious thing to do, because all cool projects I've seen had small methods. I used to take a semi-arbitrary chunk if code, give it a name, some arguments, and be happy with it. It usually looked good, but time and changing requirements always made those chunks obsolete too quickly. Requiring refactorings too often. 
+Some time ago I was trying to write simple code and failing miserably. I was writing small methods, because that was the obvious thing to do, because all cool projects I've seen had small methods. I used to take a semi-arbitrary chunk of code, give it a name, some arguments, and be happy with it. It usually looked good, but time and changing requirements always made those chunks obsolete too quickly. Requiring refactorings too often. 
 
 Nowadays I think small functions are a consequence, not a way, of achieving simplicity in code.
 
