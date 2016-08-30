@@ -43,7 +43,7 @@ All the desired operations are instantly supported by `List`, along with many ot
 
 ~~~
 days(range1).exists(day) // dayExists
-days(range1).intersectRanges(days(range2)) // intersect
+days(range1).intersect(days(range2)) // intersectRanges
 days(range1).diff(range2) // subtractRages
 ~~~
 
