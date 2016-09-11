@@ -22,17 +22,21 @@ case class DateRange(start: LocalDate, end: LocalDate)
 These are some of the operations we want for it:
 
 ~~~
-def dayExists(dateRange:DateRange, d:LocalDate):Boolean  // checks if certain day exists in the range
-def intersectRanges(dr1:DateRange, dr2:DateRange):Option[DateRange] // given two ranges, return the intersection, or nothing
-def subtractRages(dr1:DateRange, dr2:DateRange):List[DateRange] // given two ranges, return whatever times are not in the second and are in the first one
+// checks if certain day exists in the range
+def dayExists(dateRange:DateRange, d:LocalDate):Boolean  
+// given two ranges, return the intersection, or nothing
+def intersectRanges(dr1:DateRange, dr2:DateRange):Option[DateRange] 
+// given two ranges, return whatever times are not in the second and are in the first one
+def subtractRages(dr1:DateRange, dr2:DateRange):List[DateRange] 
 
 ~~~
 
 Not going to attempt the implementation of these methods, since is pretty straight forward. I rather focus on an alternative:
 
 ~~~
-def days(dateRange:DateRange):List[LocalDate] // returns all the days in a DateRange
-def dateRange(days:List[LocalDate]):List[DateRange] // returns a list of DateRange's where the days are adjacent
+// returns all the days in a DateRange
+def days(dateRange:DateRange):List[LocalDate] // returns a list of DateRange's where the days are adjacent
+def dateRange(days:List[LocalDate]):List[DateRange] 
 
 ~~~
 
