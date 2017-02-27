@@ -167,4 +167,34 @@ Generic[Foo].to(Foo(1,"a"))  === 1 :: "a" :: HNil
 
 Now there is a common "interface" to reason about.
 
+#### Type level recursion
+
+As said above, shapeless is about two things:
+
+1 - type classes
+
+2 - recursion
+
+
+Of those two things, recursion is the cornerstone. Type classes are merely an mechanism to use recursion.
+
+Let's write a type class for finding members, by type, in a case class (this typeclass *will not be used* on the problem, it's just a simpler example) e.g.:
+
+~~~
+case class Foo(i:String, d:Int)
+
+Foo("a",1).find[Int] === Some(1)
+Foo("a",1).find[Double] === None
+
+~~~
+
+Let's get the syntax out of the way first:
+
+~~~
+implicit class Ops[L <: HList](l: L) {
+    def find[A](implicit f: Find[L, A]) = f.find(l)
+}
+~~~
+
+In words: Given an heterogenous list `L`, there has to be an way to "find" `A` in `L`.
 
