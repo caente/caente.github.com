@@ -165,6 +165,6 @@ Generic[Foo].to(Foo(1,"a"))  === 1 :: "a" :: HNil
 
 ~~~
 
-Now there is a common "interface" on which we can work with.
+Now there is a common "interface" to reason about.
 
 
