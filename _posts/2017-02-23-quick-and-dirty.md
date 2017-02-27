@@ -112,20 +112,59 @@ So the signature of `applyAll` looks like this:
 def applyAll[FF <: HList, R <: HList, Args <: Product](args:Args)(functions:FF):R
 ~~~
 
-### Proofs
+### Type classes as Proofs
 
-Let's try to implement `applyAll`. We have a set of functions, and a set of arguments, we need to, for each function, "try" to apply the arguments.
+Let's try to implement `applyAll`. We have a set of functions, and a set of arguments, we need to, for each function, to "try" to apply the arguments.
 
-In a dynamically typed language, of if all items were of the same type, our solution might look like this:
+In a dynamically typed language, of if all functions and arguments were of the same type, our solution might look like this:
 
 ~~~
 def applyAll(args)(functions) = 
    functions match {
-     case x :: xs if canApply(x, args) => x(args) :: applyAll(args)(xs)
-     case _ :: xs => applyAll(args)(xs)
-     case Nil => Nil
+     case x :: xs => applyFunction(args)(x) ++ applyAll(args)(xs)
+     case Nil     => Nil
    }
 ~~~
 
+Where `applyFunction` is the magic sauce that, if the arguments are present, it returns `Some(result)`, otherwise `None`.
+
+In order to do the same with heterogenous functions and arguments, we need to provide some evidence to the compiler that it can do certain things.
+
+#### Generic
+
+First, we need to find the generic representation of our arguments, it doesn't matter if they are in a tuple or a case class, because what we'll work with is an `HList`, in order to do that, we can use the typeclass `Generic`:
+
+~~~
+def applyAll[Args <: Product, HArgs <: HList, FF <: HList, R](args: Args)(fs: FF)(
+    implicit
+    gen: Generic[Args]
+  ) = ???
+~~~
+
+The `Generic` trait/typeclass looks like this:
+
+~~~
+trait Generic[A]{type Repr}
+~~~
+
+It takes some type `A` and it returns the generic representation of that type in `Repr`, e.g.:
+
+~~~
+scala> :t Generic[(Int,String)]
+shapeless.Generic[(Int, String)]{type Repr = shapeless.::[Int,shapeless.::[String,shapeless.HNil]]}
+~~~
+
+That means that when we want to find the genric representation of a tuple `(Int,String)`, what we get as a returned type is `Int :: String :: HNil`, the same can be said of a case class:
+
+~~~
+val hl = (1,"a")
+Generic[(Int,String)].to(hl) === 1 :: "a" :: HNil
+
+case class Foo(i:Int,s:String)
+Generic[Foo].to(Foo(1,"a"))  === 1 :: "a" :: HNil
+
+~~~
+
+Now there is a common "interface" on which we can work with.
 
 
