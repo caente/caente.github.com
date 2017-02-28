@@ -169,16 +169,7 @@ Now there is a common "interface" to reason about.
 
 #### Type level recursion
 
-As said above, shapeless is about two things:
-
-1 - type classes
-
-2 - recursion
-
-
-Of those two things, recursion is the cornerstone. Type classes are merely an mechanism to use recursion.
-
-Let's write a type class for finding members, by type, in a case class (this typeclass *will not be used* on the problem, it's just a simpler example) e.g.:
+As said above, shapeless is about providing evidence to the compiler. And the way of doing so, is using typeclasses and **recursion**, being recursion the corner stone, with the added weirdness that it happens at _compile time_. So let's spend some time understanding it. For that, let's write a typeclass for finding members, by type, in a case class (this typeclass *will not be used* on the problem, it's just a simpler example) e.g.:
 
 ~~~
 case class Foo(i:String, d:Int)
@@ -198,3 +189,14 @@ implicit class Ops[L <: HList](l: L) {
 
 In words: Given an heterogenous list `L`, there has to be an way to "find" `A` in `L`.
 
+Now let's implement `Find` itself. 
+
+Based on `Ops`, we need something like this:
+
+~~~
+trait Find[L <: HList, A]{
+  def find(l:L):Option[A]
+}
+~~~
+
+This definition of `Find` follows a common pattern in shapeless: Given some generic type, e.g. an `HList`, we get some output, in this case an `A`.
