@@ -7,9 +7,21 @@ tags: []
 ---
 {% include JB/setup %}
 
+### Introduction
+
+In this piece I'll try to explain by example, how I use shapeless to bend the will of Scala :-)
+
+#### Required skills
+
+1 - recursion
+
+2 - implicit classes 
+
+3 - knowing the existence of shapeless and `HList`s
+
 ### The Problem
 
-This is an actual problem we had at work, it was related to the data-science pipeline. If you want to find cool stuff to work on, you should try to help the data scientists, they have the coolest and craziest requirements. The craziness of the requirements might imply design issues, but that would be outside the scope of this piece.
+This is an actual problem we had at work, it was related to the data-science pipeline.
 
 We needed that, given a list of functions, e.g.:
 
@@ -114,22 +126,6 @@ def applyAll[FF <: HList, R <: HList, Args <: Product](args:Args)(functions:FF):
 
 ### Type classes as Proofs
 
-Let's try to implement `applyAll`. We have a set of functions, and a set of arguments, we need to, for each function, to "try" to apply the arguments.
-
-In a dynamically typed language, of if all functions and arguments were of the same type, our solution might look like this:
-
-~~~
-def applyAll(args)(functions) = 
-   functions match {
-     case x :: xs => applyFunction(args)(x) ++ applyAll(args)(xs)
-     case Nil     => Nil
-   }
-~~~
-
-Where `applyFunction` is the magic sauce that, if the arguments are present, it returns `Some(result)`, otherwise `None`.
-
-In order to do the same with heterogenous functions and arguments, we need to provide some evidence to the compiler that it can do certain things.
-
 #### Generic
 
 First, we need to find the generic representation of our arguments, it doesn't matter if they are in a tuple or a case class, because what we'll work with is an `HList`, in order to do that, we can use the typeclass `Generic`:
@@ -154,7 +150,7 @@ scala> :t Generic[(Int,String)]
 shapeless.Generic[(Int, String)]{type Repr = shapeless.::[Int,shapeless.::[String,shapeless.HNil]]}
 ~~~
 
-That means that when we want to find the genric representation of a tuple `(Int,String)`, what we get as a returned type is `Int :: String :: HNil`, the same can be said of a case class:
+That means that when we want to find the generic representation of a tuple `(Int,String)`, what we get as a returned type is `Int :: String :: HNil`, the same can be said of a case class:
 
 ~~~
 val hl = (1,"a")
@@ -169,7 +165,7 @@ Now there is a common "interface" to reason about.
 
 #### Type level recursion
 
-As said above, shapeless is about providing evidence to the compiler. And the way of doing so, is using typeclasses and **recursion**, being recursion the corner stone, with the added weirdness that it happens at _compile time_. So let's spend some time understanding it. For that, let's write a typeclass for finding members, by type, in a case class (this typeclass *will not be used* on the problem, it's just a simpler example) e.g.:
+Shapeless is about providing evidence to the compiler. And the way of doing so, is using typeclasses and **recursion**, being recursion the corner stone, with the added weirdness that it happens at _compile time_. So let's spend some time understanding it. For that, let's write a typeclass for finding members, by type, in a case class (this typeclass *will not be used* on the problem, it's just a simpler example) e.g.:
 
 ~~~
 case class Foo(i:String, d:Int)
@@ -182,16 +178,18 @@ Foo("a",1).find[Double] === None
 Let's get the syntax out of the way first:
 
 ~~~
-implicit class Ops[L <: HList](l: L) {
-    def find[A](implicit f: Find[L, A]) = f.find(l)
+object Find {
+  implicit class Ops[L <: HList](l: L) {
+      def find[A](implicit f: Find[L, A]):Option[A] = f.find(l)
+  }
 }
 ~~~
 
-In words: Given an heterogenous list `L`, there has to be an way to "find" `A` in `L`.
+In words: Given an heterogenous list `L`, there has to be an way to "find" `A` in `L`. 
 
 Now let's implement `Find` itself. 
 
-Based on `Ops`, we need something like this:
+Based on `Find.Ops`, we need something like this:
 
 ~~~
 trait Find[L <: HList, A]{
@@ -200,3 +198,42 @@ trait Find[L <: HList, A]{
 ~~~
 
 This definition of `Find` follows a common pattern in shapeless: Given some generic type, e.g. an `HList`, we get some output, in this case an `A`.
+
+~~~
+object Find {
+  implicit class Ops[L <: HList](l: L) {
+    def find[A](implicit f: Find[L, A]) = f.find(l)
+  }
+  implicit def hconsFound[A, H, T <: HList](implicit ev: H =:= A) = new Find[H :: T, A] {
+    def find(l: H :: T) = Some(l.head)
+  }
+  implicit def hconsNotFound[A, H, T <: HList](implicit f: Find[T, A]) = new Find[H :: T, A] {
+    def find(l: H :: T) = f.find(l.tail)
+  }
+  implicit def hnil[A] = new Find[HNil, A] {
+    def find(l: HNil) = None
+  }
+}
+~~~
+
+
+
+
+
+
+---
+Let's try to implement `applyAll`. We have a set of functions, and a set of arguments, we need to, for each function, to "try" to apply the arguments.
+
+In a dynamically typed language, of if all functions and arguments were of the same type, our solution might look like this:
+
+~~~
+def applyAll(args)(functions) = 
+   functions match {
+     case x :: xs => applyFunction(args)(x) ++ applyAll(args)(xs)
+     case Nil     => Nil
+   }
+~~~
+
+Where `applyFunction` is the magic sauce that, if the arguments are present, it returns `Some(result)`, otherwise `None`.
+
+In order to do the same with heterogenous functions and arguments, we need to provide some evidence to the compiler that it can do certain things.
