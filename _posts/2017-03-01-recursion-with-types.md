@@ -16,7 +16,7 @@ As an example let's write an alternative to `Selector`, a shapeless typeclass th
 ("a" :: 1 :: HNil).select[Double] // won't compile
 ~~~
 
-In this post we'll do something less strictc. Let's write `find`, which, as `List.find` it will return `Some[A]` if it has a value of type `A`, but `None` otherwise:
+In this post we'll do something less strict. Let's write `find`, which, as `List.find` it will return `Some[A]` if it has a value of type `A`, but `None` otherwise:
 
 ~~~
 ("a" :: 1 :: HNil).find[Int] === Some(1)
@@ -44,7 +44,7 @@ import Find.Ops
 (1 :: HNil).find[Int]
 ~~~
 
-## The type class itself
+## The typeclass itself
 
 As mentioned above, `Find` behavior is: 
 
@@ -76,7 +76,7 @@ object Find {
 }
 ~~~
 
-The final code means that, in order to be able to use `find[A]` on an `HList`, there needs to be an implicit instance of `Find[A]` in scope.
+The final code means that, in order to be able to use `find[A]` on an `HList`, there needs to be an implicit instance of `Find[L, A]` in scope.
 
 If it's difficult to understand what has happened so far, I strongly recommend to read [the piece I linked before](http://aakashns.github.io/better-type-class.html).
 
@@ -94,13 +94,13 @@ def find[A](ls:List[A])(f: A => Boolean):Option[A] = ls match {
     }
 ~~~
 
-We are going to do the _exact same thing_ for our `Find[A]`.
+We are going to do the _exact same thing_ for our `Find[L, A]`.
 
 ---
 
 #### Typeclass instance equivalent to `case Nil => None`
 
-Each instance of `Find[A]` will be the equivalent to one of those cases above. Let's start with the case of `Nil`.
+Each instance of `Find[L, A]` will be the equivalent to one of those cases above. Let's start with the case of `Nil`.
 
 ~~~
 implicit def hnil[A] = new Find[HNil, A] {
@@ -154,7 +154,7 @@ implicit def hconsNotFound[A, H, T <: HList](implicit f: Find[T, A]) = new Find[
   }
 ~~~
 
-As with the runtime example, if `L` is not empty, but the head is not the same type as `A`, we ignore the head, and continue looking.
+As with the example of the regular `List`, if `L` is not empty, but the head is not the same type as `A`, we ignore the head, and continue looking.
 
 In order to do that, we need to have an instance of `Find` for the rest of the `HList`, and thus we expect it on `(implicit f: Find[T, A])`. 
 
@@ -162,11 +162,15 @@ If `T` is an `HNil`, the compiler will find the instance for `HNil`, otherwise w
 
 ---
 
-### All together
+## All together
 
 Here is the companion object with everything together.
 
 ~~~
+trait Find[L <: HList, A]{
+  def find(l:L):Option[A]
+}
+
 object Find {
   implicit class Ops[L <: HList](l: L) {
     def find[A](implicit f: Find[L, A]) = f.find(l)
