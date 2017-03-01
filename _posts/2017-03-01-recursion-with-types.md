@@ -9,14 +9,14 @@ tags: []
 
 Shapeless is about providing evidence to the compiler. And the way of doing so, is using **typeclasses and recursion at compile time**. 
 
-There is an operation that you can do on `HList`s, that shapeless calls `select`, and consists in, given an `HList` and some type `A`, we get the value out, providing that the product has the value of that type, e.g.:
+As an example let's write an alternative to `Selector`, a shapeless typeclass that allows to "extract" a value of some type `A` out of an `HList` if there is evidence that `A` exists in the `HList`:
 
 ~~~
 ("a" :: 1 :: HNil).select[Int] === 1
 ("a" :: 1 :: HNil).select[Double] // won't compile
 ~~~
 
-In this post we'll do something less strict, let's write `find`, which, as `Seq.find` it will return `Some[A]` if the product has a value of type `A`, but `None` otherwise:
+In this post we'll do something less strictc. Let's write `find`, which, as `List.find` it will return `Some[A]` if it has a value of type `A`, but `None` otherwise:
 
 ~~~
 ("a" :: 1 :: HNil).find[Int] === Some(1)
@@ -47,8 +47,11 @@ import Find.Ops
 ## The type class itself
 
 As mentioned above, `Find` behavior is: 
+
 - Given a `HList` `L` and some type `A`
+
 - It returns `Some[A]` if there is a value of type `A` in `L`
+
 - It returns `None` otherwise
 
 Let's define a type class that expresses that operation:
@@ -91,9 +94,13 @@ def find[A](ls:List[A])(f: A => Boolean):Option[A] = ls match {
     }
 ~~~
 
-We are going to do the _exact same thing_ for our type level `Find[A]`.
+We are going to do the _exact same thing_ for our `Find[A]`.
 
-Each instance of `Find[A]` will be the equivalent to one of those `case`s above. Let's start with the case of `Nil`.
+---
+
+#### Typeclass instance equivalent to `case Nil => None`
+
+Each instance of `Find[A]` will be the equivalent to one of those cases above. Let's start with the case of `Nil`.
 
 ~~~
 implicit def hnil[A] = new Find[HNil, A] {
@@ -101,7 +108,11 @@ implicit def hnil[A] = new Find[HNil, A] {
   }
 ~~~
 
-So, if `L` -- the `HList` in which we are trying to find `A` -- is the empty `HList`, `find` returns `None`.
+So, if `L` is an `HNil`, `find` returns `None`.
+
+---
+
+#### Typeclass instance equivalent to `case x :: xs if f(x) => Some(x)`
 
 Now, the instance where it returns `Some[A]`.
 
@@ -111,22 +122,31 @@ implicit def hconsFound[A, H, T <: HList](implicit ev: H =:= A) = new Find[H :: 
   }
 ~~~
 
-This is loaded, with new stuff and with pretty much everything that shapeless is about. Look at the type of the `Find` instance. It's `Find[H :: T, A]`. Where `H` is some type, and `T` is some `HList`, so `H :: T` is the equivalent to `x :: xs`, **at the type level**. The type argument of `Find` let's it match with any `HList` that is not `HNil`, but that is not enough, remember that in the `find` on `List` the pattern matching also had the check of the boolean condition. In this case we don't have an arbitrary function, but only an equality comparison. `implicit ev: H =:= A` would be the equivalent as to say `ls.find(_ == j)`, again at the type level.
+Look at the type of the `Find` instance. It's `Find[H :: T, A]`. Where `H` is some type, and `T` is some `HList`, so `H :: T` is the equivalent to `x :: xs`, **at the type level**. Therefore the type argument of `Find` will match with any `HList` that is not `HNil`.
 
-Sumarizing, this instance is used to implement `Find` if:
+Only mathching the types is not enough though. In the `find` on `List` the pattern matching also had to check the boolean condition. In this case we don't have an arbitrary function, but an equality comparison.
+
+`implicit ev: H =:= A` would be the equivalent as to say `ls.find(_ == j)`, again, at the type level.
+
+Sumarizing, these are the conditions for using this function to calculate the instance of `Find`:
+
 1 - `L` is not an `HNil`
+
 2 - there is evidence that `A` and the head of `L` have the same types
 
-If these conditions are met, then this is the instance that will be found on:
+If the conditions are met, it will return `Some[A]` *always*. This is important to remember, it seems obvious to me now, but until recently it was very easy to forget that an `HList` is known *at compile time*. 
+
+Meaning that the compiler will "know" what instance to use here:
 
 ~~~
 def find[A](implicit f: Find[L, A]):Option[A]
 ~~~
 
-And therefore it will return `Some[A]` *always*. This is important to remember, it seems obvious to me now, but until recently it was very easy to forget that an `HList` is known *at compile time*. When your code is running, it already "knows" what instance is going to use for `Find`.
+---
 
+#### Recursion! `case _ :: xs => find(xs)(f)`
 
-Let's now implement the last case:
+Finally! The recursion is here. For the case where the head is not the type we are looking for.
 
 ~~~
 implicit def hconsNotFound[A, H, T <: HList](implicit f: Find[T, A]) = new Find[H :: T, A] {
@@ -134,7 +154,15 @@ implicit def hconsNotFound[A, H, T <: HList](implicit f: Find[T, A]) = new Find[
   }
 ~~~
 
-As with the runtime example, if `L` is not empty, but the head is not the same type as `A`, we ignore the head, and continue looking. In order to do that, we need to have an instance of `Find` for the rest of the `HList`, for which we expect the `(implicit f: Find[T, A])`. If `T` is an `HNil`, the compiler will find the instance for `HNil`, otherwise will try to use the instance with the type equality, otherwise this one. Until `A` is found or `HNil` is reached.
+As with the runtime example, if `L` is not empty, but the head is not the same type as `A`, we ignore the head, and continue looking.
+
+In order to do that, we need to have an instance of `Find` for the rest of the `HList`, and thus we expect it on `(implicit f: Find[T, A])`. 
+
+If `T` is an `HNil`, the compiler will find the instance for `HNil`, otherwise will try to use the instance with the type equality, otherwise this one. Until `A` is found or `HNil` is reached.
+
+---
+
+### All together
 
 Here is the companion object with everything together.
 
@@ -155,6 +183,6 @@ object Find {
 }
 ~~~
 
-The actual implementation of this can be found in our library [typeless](https://github.com/xdotai/typeless)
+The actual implementation of this can be found in our library [typeless](https://github.com/xdotai/typeless/blob/master/src/main/scala/hlist/find.scala)
 
 
